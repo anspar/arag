@@ -1,31 +1,21 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
-use std::{env, fs};
+use std::{env};
 use std::error::Error;
 use std::fs::File;
-use std::io::Write;
-
 use handlebars::Handlebars;
-
 use opener;
 use console::style;
 mod cli;
 mod helpers;
-
-static ENTRY_TEMPLATE: &str = "index.html";
-static TEMPLATE_DIR: &str = "templates";
-static STATIC_DIR: &str = "static";
-static JAVASCRIPT_DIR: &str = "js";
-static CSS_DIR: &str = "css";
-static JAVASCRIPT_FILE: &str = "index.js";
-static CSS_FILE: &str = "index.css";
+mod project_creator;
 
 fn pkg(hb: &mut Handlebars, r_path: &str) -> String{
     hb.unregister_template("index");
-    match hb.register_template_file("index", format!("{}/{}/{}", r_path, TEMPLATE_DIR, ENTRY_TEMPLATE)){
+    match hb.register_template_file("index", format!("{}/{}/{}", r_path, project_creator::TEMPLATE_DIR, project_creator::ENTRY_TEMPLATE)){
         Err(e)=>{println!("Can't render the template: {}", style(e).red().bold()); return "".to_owned();}
         _=>{}
     };
-    let path = format!("{}/out.html", r_path);
+    let path = format!("{}/build.html", r_path);
     match File::create(&path){
         Ok(mut output_file)=>{
             match hb.render_to_write("index", &false, &mut output_file){
@@ -49,59 +39,6 @@ fn read_char() -> Result<char, Box<dyn Error>> {
             return Ok(c);
         }
     }
-}
-
-fn create_new_project(r_path: &str, name: &str){
-    match fs::create_dir(format!("{}/{}", r_path, &name)){
-        Err(_)=>{println!("Project {} exists", style(name).red().bold()); return}
-        _=>{}
-    };
-    fs::create_dir(format!("{}/{}/{}", r_path, &name, TEMPLATE_DIR)).unwrap_or_else(|_| {println!("Can't create {} dir",style(TEMPLATE_DIR).red().bold())});
-    fs::create_dir(format!("{}/{}/{}", r_path, &name, STATIC_DIR)).unwrap_or_else(|_| {println!("Can't create {} dir",style(STATIC_DIR).red().bold())});
-    fs::create_dir(format!("{}/{}/{}/{}", r_path, &name, STATIC_DIR, JAVASCRIPT_DIR)).unwrap_or_else(|_| {println!("Can't create {} dir",style(JAVASCRIPT_DIR).red().bold())});
-    fs::create_dir(format!("{}/{}/{}/{}", r_path, &name, STATIC_DIR, CSS_DIR)).unwrap_or_else(|_| {println!("Can't create {} dir",style(CSS_DIR).red().bold())});
-    match File::create(format!("{}/{}/{}/{}", r_path, &name, TEMPLATE_DIR, ENTRY_TEMPLATE)){
-        Ok(mut ih_file)=>{
-            ih_file.write_all(format!("
-<!DOCTYPE html>
-<html lang=\"en\">
-<head>
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-    <title>{}</title>
-    {{{{import_css \"{}/{}/{}\"}}}}
-</head>
-<body>
-    <div class=\"main\">
-        <h1>Anspar DApp builder</h1>
-    </div>
-    {{{{import_js \"{}/{}/{}\"}}}}
-</body>
-</html>
-            ", name,
-            STATIC_DIR,CSS_DIR,CSS_FILE,
-            STATIC_DIR,JAVASCRIPT_DIR,JAVASCRIPT_FILE
-
-        ).as_bytes()).unwrap_or_else(|_| {println!("Can't write to {} file",style(ENTRY_TEMPLATE).red().bold())});
-        }
-        Err(e)=>{println!("Can't create {} file: {}",style(ENTRY_TEMPLATE).red().bold(), e); return;}
-    }
-    
-    match File::create(format!("{}/{}/{}/{}/{}", r_path, &name, STATIC_DIR, JAVASCRIPT_DIR, JAVASCRIPT_FILE)){
-        Ok(mut js_file)=>{
-            js_file.write_all(b"console.log('js is included!');").unwrap_or_else(|_| {println!("Can't write to {} file",style(JAVASCRIPT_FILE).red().bold())});
-        }
-        Err(e)=>{println!("Can't create {} file: {}",style(JAVASCRIPT_FILE).red().bold(), e); return}
-    }
-
-    match File::create(format!("{}/{}/{}/{}/{}", r_path, &name, STATIC_DIR, CSS_DIR, CSS_FILE)){
-        Ok(mut css_file)=>{
-            css_file.write_all(b"body{ background: #5dc0be;}").unwrap_or_else(|_| {println!("Can't write to {} file",style(CSS_FILE).red().bold())});
-        }
-        Err(e)=>{println!("Can't create {} file: {}",style(CSS_FILE).red().bold(), e); return;}
-    }
-    
-    println!("Created project {}", style(name).green().bold());
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -154,7 +91,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Some(v)=>{
             match v {
                 cli::Command::New{name} => {
-                    create_new_project(&r_path.display().to_string(), &name);
+                    project_creator::create_new_project(&r_path.display().to_string(), &name);
                     return Ok(());
                 }
                 
