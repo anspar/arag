@@ -2,188 +2,41 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent};
 use std::{env, fs};
 use std::error::Error;
 use std::fs::File;
-use std::io::{Read, Write};
-use base64;
+use std::io::Write;
 
-use handlebars::{ Context, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError};
+use handlebars::Handlebars;
 
 use opener;
 use console::style;
+mod cli;
+mod helpers;
 
-use structopt::StructOpt;
+static ENTRY_TEMPLATE: &str = "index.html";
+static TEMPLATE_DIR: &str = "templates";
+static STATIC_DIR: &str = "static";
+static JAVASCRIPT_DIR: &str = "js";
+static CSS_DIR: &str = "css";
+static JAVASCRIPT_FILE: &str = "index.js";
+static CSS_FILE: &str = "index.css";
 
-#[derive(StructOpt, Debug)]
-#[structopt(name = "arag", about = "Anspar DApp builder")]
-struct Opt {
-    /// Serve the packaged html
-    #[structopt(short, long)]
-    show: bool,
-
-    /// package everything into a single html
-    #[structopt(short, long)]
-    pkg: bool,
-
-    #[structopt(subcommand)]
-    cmd: Option<Command>,
-}
-
-#[derive(StructOpt, Debug)]
-#[structopt(about = "Create new project")]
-enum Command {
-    New {
-        /// Project name
-        name: String
-    }
-}
-
-fn get_file_content_text(file_path: &str)-> String{
-    let r_path = env::current_dir().unwrap();
-    let js = fs::read_to_string(format!("{}/{}", r_path.display(), file_path));
-    js.unwrap()
-}
-
-fn get_file_content_bytes(file_path: &str)-> Vec<u8>{
-    let r_path = env::current_dir().unwrap();
-    let js = fs::read(format!("{}/{}", r_path.display(), file_path));
-    js.unwrap()
-}
-
-fn get_web_content_text(url: &str)->String{
-    let mut js: String = "".to_owned();
-    let _ = reqwest::blocking::get(url).unwrap().read_to_string(&mut js).unwrap();
-    js
-}
-
-
-fn import_js(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> Result<(), RenderError> {
-    let param = h
-        .param(0)
-        .ok_or(RenderError::new("Param 0 is required for import_js helper."))?;
-    out.write(format!("<script>{}</script>", get_file_content_text(&param.value().render())).as_ref())?;
-    Ok(())
-}
-
-fn import_js_web(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> Result<(), RenderError> {
-    let param = h
-        .param(0)
-        .ok_or(RenderError::new("Param 0 is required for import_js_web helper."))?;
-    out.write(format!("<script>{}</script>", get_web_content_text(&param.value().render())).as_ref())?;
-    Ok(())
-}
-
-fn import_css(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> Result<(), RenderError> {
-    let param = h
-        .param(0)
-        .ok_or(RenderError::new("Param 0 is required for import_css helper."))?;
-    out.write(format!("<style>{}</style>", get_file_content_text(&param.value().render())).as_ref())?;
-    Ok(())
-}
-
-fn import_css_web(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> Result<(), RenderError> {
-    let param = h
-        .param(0)
-        .ok_or(RenderError::new("Param 0 is required for import_js_web helper."))?;
-    out.write(format!("<style>{}</style>", get_web_content_text(&param.value().render())).as_ref())?;
-    Ok(())
-}
-
-fn import_html(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> Result<(), RenderError> {
-    let param = h
-        .param(0)
-        .ok_or(RenderError::new("Param 0 is required for import_html helper."))?;
-    // let rendered = format!("{} pts", param.value().render());
-    let r_path = env::current_dir().unwrap();
-    let js = fs::read_to_string(format!("{}/{}", r_path.display(), param.value().render()));
-    out.write(js.unwrap().as_ref())?;
-    Ok(())
-}
-
-fn import_img(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> Result<(), RenderError> {
-    let param = h
-        .param(0)
-        .ok_or(RenderError::new("Param 0 is required for import_img helper."))?;
-    // let rendered = format!("{} pts", param.value().render());
-    let r_path = env::current_dir().unwrap();
-    let rel_path = param.value().render();
-    let img = fs::read(format!("{}/{}", r_path.display(), rel_path));
-    let b64 = base64::encode(img.unwrap());
-    let ext: Vec<&str> = rel_path.split(".").collect();
-    out.write(format!("data:image/{};base64,{}", ext.last().unwrap().to_string(), b64).as_ref())?;
-    Ok(())
-}
-
-fn import_json(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> Result<(), RenderError> {
-    let param = h
-        .param(0)
-        .ok_or(RenderError::new("Param 0 is required for import_json helper."))?;
-    out.write(get_file_content_text(&param.value().render()).as_ref())?;
-    Ok(())
-}
-
-fn import_wasm(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> Result<(), RenderError> {
-    let param = h
-        .param(0)
-        .ok_or(RenderError::new("Param 0 is required for import_json helper."))?;
-    out.write(format!("new Uint8Array({:?}).buffer", get_file_content_bytes(&param.value().render())).as_ref())?;
-    Ok(())
-}
-
-fn pkg(hb: &mut Handlebars, r_path: &str) -> Result<String, Box<dyn Error>>{
+fn pkg(hb: &mut Handlebars, r_path: &str) -> String{
     hb.unregister_template("index");
-    hb.register_template_file("index", format!("{}/templates/index.html.hbs", r_path)).unwrap();
+    match hb.register_template_file("index", format!("{}/{}/{}", r_path, TEMPLATE_DIR, ENTRY_TEMPLATE)){
+        Err(e)=>{println!("Can't render the template: {}", style(e).red().bold()); return "".to_owned();}
+        _=>{}
+    };
     let path = format!("{}/out.html", r_path);
-    let mut output_file = File::create(&path)?;
-    hb.render_to_write("index", &false, &mut output_file)?;
+    match File::create(&path){
+        Ok(mut output_file)=>{
+            match hb.render_to_write("index", &false, &mut output_file){
+                Err(e)=>{println!("Can't write to the build file: {}", style(e).red().bold()); return "".to_owned();}
+                _=>{}
+            };
+        }
+        Err(e)=>{println!("Can't create the build file: {}", style(e).red().bold()); return "".to_owned();}
+    }
     println!("Build finished");
-    Ok(path)
+    path
 }
 
 fn read_char() -> Result<char, Box<dyn Error>> {
@@ -197,34 +50,91 @@ fn read_char() -> Result<char, Box<dyn Error>> {
         }
     }
 }
-fn main() -> Result<(), Box<dyn Error>> {
-    // env_logger::init();
-    let opt = Opt::from_args();
 
-    let r_path = env::current_dir().unwrap();
+fn create_new_project(r_path: &str, name: &str){
+    match fs::create_dir(format!("{}/{}", r_path, &name)){
+        Err(_)=>{println!("Project {} exists", style(name).red().bold()); return}
+        _=>{}
+    };
+    fs::create_dir(format!("{}/{}/{}", r_path, &name, TEMPLATE_DIR)).unwrap_or_else(|_| {println!("Can't create {} dir",style(TEMPLATE_DIR).red().bold())});
+    fs::create_dir(format!("{}/{}/{}", r_path, &name, STATIC_DIR)).unwrap_or_else(|_| {println!("Can't create {} dir",style(STATIC_DIR).red().bold())});
+    fs::create_dir(format!("{}/{}/{}/{}", r_path, &name, STATIC_DIR, JAVASCRIPT_DIR)).unwrap_or_else(|_| {println!("Can't create {} dir",style(JAVASCRIPT_DIR).red().bold())});
+    fs::create_dir(format!("{}/{}/{}/{}", r_path, &name, STATIC_DIR, CSS_DIR)).unwrap_or_else(|_| {println!("Can't create {} dir",style(CSS_DIR).red().bold())});
+    match File::create(format!("{}/{}/{}/{}", r_path, &name, TEMPLATE_DIR, ENTRY_TEMPLATE)){
+        Ok(mut ih_file)=>{
+            ih_file.write_all(format!("
+<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>{}</title>
+    {{{{import_css \"{}/{}/{}\"}}}}
+</head>
+<body>
+    <div class=\"main\">
+        <h1>Anspar DApp builder</h1>
+    </div>
+    {{{{import_js \"{}/{}/{}\"}}}}
+</body>
+</html>
+            ", name,
+            STATIC_DIR,CSS_DIR,CSS_FILE,
+            STATIC_DIR,JAVASCRIPT_DIR,JAVASCRIPT_FILE
+
+        ).as_bytes()).unwrap_or_else(|_| {println!("Can't write to {} file",style(ENTRY_TEMPLATE).red().bold())});
+        }
+        Err(e)=>{println!("Can't create {} file: {}",style(ENTRY_TEMPLATE).red().bold(), e); return;}
+    }
+    
+    match File::create(format!("{}/{}/{}/{}/{}", r_path, &name, STATIC_DIR, JAVASCRIPT_DIR, JAVASCRIPT_FILE)){
+        Ok(mut js_file)=>{
+            js_file.write_all(b"console.log('js is included!');").unwrap_or_else(|_| {println!("Can't write to {} file",style(JAVASCRIPT_FILE).red().bold())});
+        }
+        Err(e)=>{println!("Can't create {} file: {}",style(JAVASCRIPT_FILE).red().bold(), e); return}
+    }
+
+    match File::create(format!("{}/{}/{}/{}/{}", r_path, &name, STATIC_DIR, CSS_DIR, CSS_FILE)){
+        Ok(mut css_file)=>{
+            css_file.write_all(b"body{ background: #5dc0be;}").unwrap_or_else(|_| {println!("Can't write to {} file",style(CSS_FILE).red().bold())});
+        }
+        Err(e)=>{println!("Can't create {} file: {}",style(CSS_FILE).red().bold(), e); return;}
+    }
+    
+    println!("Created project {}", style(name).green().bold());
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let opt = cli::get_args();
+
+    let r_path = match env::current_dir(){
+        Ok(v)=>v,
+        Err(e)=>{println!("Can't get current directory path: {}", style(e).red().bold()); return Ok(())}
+    };
 
     let mut hb = Handlebars::new();
 
-    hb.register_helper("import_js", Box::new(import_js));
-    hb.register_helper("import_js_web", Box::new(import_js_web));
-    hb.register_helper("import_html", Box::new(import_html));
-    hb.register_helper("import_raw", Box::new(import_html));
-    hb.register_helper("import_img", Box::new(import_img));
-    hb.register_helper("import_css", Box::new(import_css));
-    hb.register_helper("import_css_web", Box::new(import_css_web));
-    hb.register_helper("import_json", Box::new(import_json));
-    hb.register_helper("import_wasm", Box::new(import_wasm));
+    hb.register_helper("import_js", Box::new(helpers::import_js));
+    hb.register_helper("import_js_web", Box::new(helpers::import_js_web));
+    hb.register_helper("import_html", Box::new(helpers::import_html));
+    hb.register_helper("import_raw", Box::new(helpers::import_html));
+    hb.register_helper("import_img", Box::new(helpers::import_img));
+    hb.register_helper("import_css", Box::new(helpers::import_css));
+    hb.register_helper("import_css_web", Box::new(helpers::import_css_web));
+    hb.register_helper("import_json", Box::new(helpers::import_json));
+    hb.register_helper("import_wasm", Box::new(helpers::import_wasm));
 
 
     if opt.pkg{
-        let p = pkg(&mut hb, &r_path.display().to_string()).unwrap();
-        println!("Find the file at: {}", style(p).green().bold());
+        let p = pkg(&mut hb, &r_path.display().to_string());
+        if !p.eq(""){println!("Find the file at: {}", style(p).green().bold());}
         return Ok(())
     }
 
     if opt.show{
-        let f = pkg(&mut hb, &r_path.display().to_string())?;
-        let _ = opener::open(f)?;
+        let p = pkg(&mut hb, &r_path.display().to_string());
+        if p.eq(""){return Ok(())}
+        let _ = opener::open(p)?;
         println!(
             "Type {} or {}",
             style("'r' to rebuild").green().bold(),
@@ -232,7 +142,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
         loop {
             match read_char()? {
-                'r' => pkg(&mut hb, &r_path.display().to_string())?,
+                'r' => pkg(&mut hb, &r_path.display().to_string()),
                 'q' => break,
                 _ => continue
             };
@@ -240,44 +150,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(())        
     }
 
-    match opt.cmd.unwrap() {
-        Command::New {name} => {
-            fs::create_dir(format!("{}/{}", r_path.display(), &name)).unwrap();
-            fs::create_dir(format!("{}/{}/templates", r_path.display(), &name)).unwrap();
-            fs::create_dir(format!("{}/{}/static", r_path.display(), &name)).unwrap();
-            fs::create_dir(format!("{}/{}/static/js", r_path.display(), &name)).unwrap();
-            fs::create_dir(format!("{}/{}/static/css", r_path.display(), &name)).unwrap();
-            let mut ih_file = File::create(format!("{}/{}/templates/index.html", r_path.display(), &name)).unwrap();
-            ih_file.write_all(b"<!DOCTYPE html>
-            <html lang=\"en\">
-            <head>
-            <meta charset=\"UTF-8\">
-            <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">
-            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-            {{import_css \"static/css/index.css\"}}
-            </head>
-            <body>
-            <div class=\"main\">
-                <h1>Anspar DApp builder</h1>
-            </div>
-            {{import_js \"static/js/index.js\"}}
-            </body>
-            </html>").unwrap();
-
-            let mut js_file = File::create(format!("{}/{}/static/js/index.js", r_path.display(), &name)).unwrap();
-            js_file.write_all(b"console.log('js is included!')").unwrap();
-
-            let mut css_file = File::create(format!("{}/{}/static/css/index.css", r_path.display(), &name)).unwrap();
-            css_file.write_all(b"body{
-                background: #5dc0be
-            }").unwrap();
-
-            println!("Created project {}", style(name).green().bold());
-
-            return Ok(())
+    match opt.cmd {
+        Some(v)=>{
+            match v {
+                cli::Command::New{name} => {
+                    create_new_project(&r_path.display().to_string(), &name);
+                    return Ok(());
+                }
+                
+            }
         }
-
-        _ => {}
+        None => {}
     }
 
     println!("Use -h to see available options");
