@@ -7,9 +7,13 @@ pub struct Opt {
     #[structopt(short, long)]
     pub show: bool,
 
-    /// package everything into a single html
+    /// Package everything into a single html
     #[structopt(short, long)]
     pub pkg: bool,
+
+    /// Path to custom entry html file
+    #[structopt(short, long)]
+    pub entry: Option<String>,
 
     #[structopt(subcommand)]
     pub cmd: Option<Command>,

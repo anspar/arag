@@ -9,9 +9,9 @@ mod cli;
 mod helpers;
 mod project_creator;
 
-fn pkg(hb: &mut Handlebars, r_path: &str) -> String{
+fn pkg(hb: &mut Handlebars, r_path: &str, entry_file: &str) -> String{
     hb.unregister_template("index");
-    match hb.register_template_file("index", format!("{}/{}/{}", r_path, project_creator::TEMPLATE_DIR, project_creator::ENTRY_TEMPLATE)){
+    match hb.register_template_file("index", format!("{}/{}", r_path, entry_file)){
         Err(e)=>{println!("Can't render the template: {}", style(e).red().bold()); return "".to_owned();}
         _=>{}
     };
@@ -49,6 +49,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         Err(e)=>{println!("Can't get current directory path: {}", style(e).red().bold()); return Ok(())}
     };
 
+    let entry_html = match opt.entry {
+        Some(v) if v.ne("")=>v,
+        _=>format!("{}/{}", project_creator::TEMPLATE_DIR, project_creator::ENTRY_TEMPLATE)
+    };
+
+    println!("{}", &entry_html);
+
     let mut hb = Handlebars::new();
 
     hb.register_helper("import_js", Box::new(helpers::import_js));
@@ -63,13 +70,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 
     if opt.pkg{
-        let p = pkg(&mut hb, &r_path.display().to_string());
+        let p = pkg(&mut hb, &r_path.display().to_string(), &entry_html);
         if !p.eq(""){println!("Find the file at: {}", style(p).green().bold());}
         return Ok(())
     }
 
     if opt.show{
-        let p = pkg(&mut hb, &r_path.display().to_string());
+        let p = pkg(&mut hb, &r_path.display().to_string(), &entry_html);
         if p.eq(""){return Ok(())}
         let _ = opener::open(p)?;
         println!(
@@ -79,7 +86,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
         loop {
             match read_char()? {
-                'r' => pkg(&mut hb, &r_path.display().to_string()),
+                'r' => pkg(&mut hb, &r_path.display().to_string(), &entry_html),
                 'q' => break,
                 _ => continue
             };
