@@ -54,8 +54,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         _=>format!("{}/{}", project_creator::TEMPLATE_DIR, project_creator::ENTRY_TEMPLATE)
     };
 
-    println!("{}", &entry_html);
-
     let mut hb = Handlebars::new();
 
     hb.register_helper("import_js", Box::new(helpers::import_js));
