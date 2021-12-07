@@ -138,7 +138,55 @@ pub fn import_img(
         Ok(v)=>v,
         Err(e)=>{println!("Error importing img: {}", style(e).red().bold()); "".to_owned()}
     };
-    out.write(format!("data:image/{};base64,{}", ext, result).as_ref())?;
+    out.write(format!("data:image/{};base64,{}", ext.to_lowercase(), result).as_ref())?;
+    Ok(())
+}
+
+pub fn import_video(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _: &mut RenderContext,
+    out: &mut dyn Output,
+) -> Result<(), RenderError> {
+    let param = h
+        .param(0)
+        .ok_or(RenderError::new("Param 0 is required for import_video helper."))?;
+    let file_path = param.value().render();
+    let ext: Vec<&str> = file_path.split(".").collect();
+    let ext = match ext.last(){
+        Some(v)=>v.to_string(),
+        None=>"".to_owned()
+    };
+    let result = match get_file_content_base64(&file_path){
+        Ok(v)=>v,
+        Err(e)=>{println!("Error importing video: {}", style(e).red().bold()); "".to_owned()}
+    };
+    out.write(format!("data:video/{};base64,{}", ext.to_lowercase(), result).as_ref())?;
+    Ok(())
+}
+
+pub fn import_audio(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _: &mut RenderContext,
+    out: &mut dyn Output,
+) -> Result<(), RenderError> {
+    let param = h
+        .param(0)
+        .ok_or(RenderError::new("Param 0 is required for import_audio helper."))?;
+    let file_path = param.value().render();
+    let ext: Vec<&str> = file_path.split(".").collect();
+    let ext = match ext.last(){
+        Some(v)=>v.to_string(),
+        None=>"".to_owned()
+    };
+    let result = match get_file_content_base64(&file_path){
+        Ok(v)=>v,
+        Err(e)=>{println!("Error importing audio: {}", style(e).red().bold()); "".to_owned()}
+    };
+    out.write(format!("data:audio/{};base64,{}", ext.to_lowercase(), result).as_ref())?;
     Ok(())
 }
 
@@ -169,11 +217,29 @@ pub fn import_wasm(
 ) -> Result<(), RenderError> {
     let param = h
         .param(0)
-        .ok_or(RenderError::new("Param 0 is required for import_json helper."))?;
+        .ok_or(RenderError::new("Param 0 is required for import_wasm helper."))?;
     let result = match get_file_content_bytes(&param.value().render()){
         Ok(v)=>v,
         Err(e)=>{println!("Error importing wasm: {}", style(e).red().bold()); vec![]}
     };
     out.write(format!("new Uint8Array({:?}).buffer", result).as_ref())?;
+    Ok(())
+}
+
+pub fn import_bytes(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _: &mut RenderContext,
+    out: &mut dyn Output,
+) -> Result<(), RenderError> {
+    let param = h
+        .param(0)
+        .ok_or(RenderError::new("Param 0 is required for import_bytes helper."))?;
+    let result = match get_file_content_bytes(&param.value().render()){
+        Ok(v)=>v,
+        Err(e)=>{println!("Error importing bytes: {}", style(e).red().bold()); vec![]}
+    };
+    out.write(format!("new Uint8Array({:?})", result).as_ref())?;
     Ok(())
 }

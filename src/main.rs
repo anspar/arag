@@ -61,10 +61,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     hb.register_helper("import_html", Box::new(helpers::import_html));
     hb.register_helper("import_raw", Box::new(helpers::import_html));
     hb.register_helper("import_img", Box::new(helpers::import_img));
+    hb.register_helper("import_video", Box::new(helpers::import_video));
+    hb.register_helper("import_audio", Box::new(helpers::import_audio));
     hb.register_helper("import_css", Box::new(helpers::import_css));
     hb.register_helper("import_css_web", Box::new(helpers::import_css_web));
     hb.register_helper("import_json", Box::new(helpers::import_json));
     hb.register_helper("import_wasm", Box::new(helpers::import_wasm));
+    hb.register_helper("import_bytes", Box::new(helpers::import_bytes));
 
 
     if opt.pkg{

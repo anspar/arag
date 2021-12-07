@@ -1724,7 +1724,7 @@ pub fn create_new_project(r_path: &str, name: &str){
 </head>
 <body>
     <div class=\"main\">
-        <img src={{{{import_img \"{}/{}\"}}}}>
+        <img src=\"{{{{import_img \"{}/{}\"}}}}\">
         <h1>Anspar DApp builder</h1>
     </div>
     {{{{import_js \"{}/{}/{}\"}}}}
