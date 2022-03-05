@@ -127,21 +127,21 @@ basic_import_helper!(import_img => |param: String|{
 
 basic_import_helper!(import_js => |param: String|{
     match super::get_file_content_text(&param){
-        Ok(v)=>format!("<script>{}</script>", v),
+        Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
         Err(e)=>{println!("Error importing js: {}", style(e).red().bold()); "".to_owned()}
     }
 });
 
 basic_import_helper!(import_css => |param: String|{
     match super::get_file_content_text(&param){
-        Ok(v)=>format!("<style>{}</style>", v),
+        Ok(v)=>format!("<style>{}</style>", minifier::css::minify(&v).unwrap()),
         Err(e)=>{println!("Error importing css: {}", style(e).red().bold()); "".to_owned()}
     }
 });
 
 basic_import_helper!(import_js_web => |param: String|{
     match super::get_web_content_text(&param){
-        Ok(v)=>format!("<script>{}</script>", v),
+        Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
         Err(e)=>{println!("Error importing js from web: {}", style(e).red().bold()); "".to_owned()}
     }
 });
@@ -156,14 +156,14 @@ basic_import_helper!(import_css_web => |param: String|{
 
 context_import_helper!(import_js_ipfs => |param: String, c: &Context|{
     match super::get_web_content_text(&format!("{}/{}", c.data().to_string(), &param)){
-        Ok(v)=>format!("<script>{}</script>", v),
+        Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
         Err(e)=>{println!("Error importing js from web: {}", style(e).red().bold()); "".to_owned()}
     }
 });
 
 context_import_helper!(import_css_ipfs => |param: String, c: &Context|{
     match super::get_web_content_text(&format!("{}/{}", c.data().to_string(), &param)){
-        Ok(v)=>format!("<style>{}</style>", v),
+        Ok(v)=>format!("<style>{}</style>", minifier::css::minify(&v).unwrap()),
         Err(e)=>{println!("Error importing css from web: {}", style(e).red().bold()); "".to_owned()}
     }
 });
@@ -183,7 +183,7 @@ context_import_helper!(import_bytes_ipfs => |param: String, c: &Context|{
 });
 
 context_import_helper!(inject_gateway = |c: &Context|{
-    format!("let IPFS_GATEWAY = {}
+    minifier::js::minify(&format!("let IPFS_GATEWAY = {};
     document.addEventListener('DOMContentLoaded', function() {{
         setInterval(()=>{{
             try{{
@@ -194,5 +194,5 @@ context_import_helper!(inject_gateway = |c: &Context|{
                 e.removeAttribute('ipfs');
             }})
         }}, 1000)
-    }});", c.data().to_string())
+    }});", c.data().to_string()))
 });

@@ -1,4 +1,5 @@
 use notify::{RecursiveMode, Watcher, watcher};
+use std::fmt::format;
 use std::sync::mpsc::channel;
 use std::time::Duration;
 use std::{env};
@@ -37,8 +38,10 @@ fn pkg(hb: &mut Handlebars, r_path: &str, entry: &str, gateway: &str) -> String{
 
 fn start_dir_watcher(hb: &mut Handlebars, r_path: &str, entry: &str, gateway: &str){
     let (tx, rx) = channel();
-    let mut watcher = watcher(tx, Duration::from_secs(50)).unwrap();
-    watcher.watch(entry, RecursiveMode::Recursive).unwrap();
+    let mut watcher = watcher(tx, Duration::from_millis(100)).unwrap();
+    watcher.watch(&entry, RecursiveMode::Recursive).unwrap();
+    watcher.watch(format!("{}/{}", &r_path, &constants::STATIC_DIR), RecursiveMode::Recursive)
+    .expect(&format!("No {} dir", style(&constants::STATIC_DIR).red()));
     loop{
         match rx.recv(){
             Ok(e)=> {
@@ -46,7 +49,7 @@ fn start_dir_watcher(hb: &mut Handlebars, r_path: &str, entry: &str, gateway: &s
                     notify::DebouncedEvent::NoticeWrite(_)=>{
                         pkg(hb, r_path, entry, gateway);
                     },
-                    _=>{}
+                    _=>{continue}
                 }
             },
             Err(e)=> println!("{}", style(e).red().bold())

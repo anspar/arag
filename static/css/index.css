@@ -1,7 +1,10 @@
 
 img{
-    width: 320px;
+    width: 100vw;
     height: auto;
+    position: absolute;
+    z-index: -1;
+    filter: blur(100px);
 }
 .main{
     align-self: center;
@@ -9,4 +12,37 @@ img{
     flex-direction: column;
     justify-content: center;
     align-items: center;
+}
+
+h1{
+    font-size: 45px;
+    font-weight: bold;
+}
+
+video{
+    width: 480px;
+    height: calc((480px/16)*9);
+}
+
+div.nav{
+    display: flex;
+    flex-direction: column;
+    width: 480px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+}
+
+a{
+    font-size: 25px;
+    background: white;
+    border-radius: 10px;
+    border-style: none;
+    color: black;
+    padding: 5px;
+    margin: 5px;
+}
+
+a:hover{
+    box-shadow: 0px 3px 5px black;
 }

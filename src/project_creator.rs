@@ -25,16 +25,16 @@ fn create_folders(r_path: &str, name: &str)->Result<(), std::io::Error>{
 pub fn create_new_project(r_path: &str, name: &str)->Result<(), Box<dyn Error>>{
     create_folders(r_path, name)?;
     create_file_from_web(&format!("{}/{}", constants::IPFS_GATEWAY, constants::CID_HTML), 
-                        &format!("{}/{}/{}", r_path, &name, constants::TEMPLATE_DIR), "index.html")?;
+                        &format!("{}/{}/{}", r_path, &name, constants::TEMPLATE_DIR), constants::ENTRY_TEMPLATE)?;
 
     create_file_from_web(&format!("{}/{}", constants::IPFS_GATEWAY, constants::CID_JS), 
-                        &format!("{}/{}/{}/{}", r_path, &name, constants::STATIC_DIR, constants::JAVASCRIPT_DIR), "index.js")?;
+                        &format!("{}/{}/{}/{}", r_path, &name, constants::STATIC_DIR, constants::JAVASCRIPT_DIR), constants::JAVASCRIPT_FILE)?;
 
     create_file_from_web(&format!("{}/{}", constants::IPFS_GATEWAY, constants::CID_CSS), 
-                        &format!("{}/{}/{}/{}", r_path, &name, constants::STATIC_DIR, constants::CSS_DIR), "index.css")?;
+                        &format!("{}/{}/{}/{}", r_path, &name, constants::STATIC_DIR, constants::CSS_DIR), constants::CSS_FILE)?;
 
     create_file_from_web(&format!("{}/{}", constants::IPFS_GATEWAY, constants::CID_LOGO), 
-                        &format!("{}/{}/{}", r_path, &name, constants::STATIC_DIR), "logo.png")?;
+                        &format!("{}/{}/{}", r_path, &name, constants::STATIC_DIR), constants::IMAGE_FILE)?;
 
     println!("Created project {}", style(name).green().bold());
     Ok(())
