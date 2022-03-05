@@ -1,0 +1,22 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arag Welcome</title>
+    {{import_css "static/css/index.css"}}
+</head>
+<body>
+    <div class="main">
+        <img src="{{import_img "static/logo.png"}}">
+        <h1>Arag Dapp Builder</h1>
+        <video ipfs="QmWbFPBbfdqBJ4cGuwvCMmoEtGjycHWWV3iB9TZQDa34XD" controls></video>
+    </div>
+    <script>
+        {{inject_gateway}}
+    </script>
+    {{import_js "static/js/index.js"}}
+</body>
+</html>
+            

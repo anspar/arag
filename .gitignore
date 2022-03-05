@@ -1,4 +1,3 @@
 /target
-/templates
-/static
-*.html
+build.html
+Cargo.lock

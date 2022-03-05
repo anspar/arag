@@ -1,0 +1,12 @@
+
+img{
+    width: 320px;
+    height: auto;
+}
+.main{
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
