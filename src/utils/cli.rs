@@ -24,10 +24,10 @@ pub struct Opt {
 pub enum Command {
     New {
         /// Project name
-        name: String
-    }
+        name: String,
+    },
 }
 
-pub fn get_args()->Opt{
+pub fn get_args() -> Opt {
     Opt::from_args()
 }
