@@ -10,13 +10,13 @@ macro_rules! basic_import_helper {
             _: &mut RenderContext,
             out: &mut dyn Output,
         ) -> Result<(), RenderError> {
-            let param = h.param(0)
-                        .ok_or(RenderError::new(format!("Param 0 is required for {}", stringify!($name))))?;
-            match out.write(
-                &$fn(param.value().render())
-            ){
-                Ok(_)=>Ok(()),
-                Err(e)=>(Err(RenderError::new(format!("Error rendering: {}", e))))
+            let param = h.param(0).ok_or(RenderError::new(format!(
+                "Param 0 is required for {}",
+                stringify!($name)
+            )))?;
+            match out.write(&$fn(param.value().render())) {
+                Ok(_) => Ok(()),
+                Err(e) => (Err(RenderError::new(format!("Error rendering: {}", e)))),
             }
         }
     };
@@ -31,13 +31,13 @@ macro_rules! context_import_helper {
             _: &mut RenderContext,
             out: &mut dyn Output,
         ) -> Result<(), RenderError> {
-            let param = h.param(0)
-                        .ok_or(RenderError::new(format!("Param 0 is required for {}", stringify!($name))))?;
-            match out.write(
-                &$fn(param.value().render(), c)
-            ){
-                Ok(_)=>Ok(()),
-                Err(e)=>(Err(RenderError::new(format!("Error rendering: {}", e))))
+            let param = h.param(0).ok_or(RenderError::new(format!(
+                "Param 0 is required for {}",
+                stringify!($name)
+            )))?;
+            match out.write(&$fn(param.value().render(), c)) {
+                Ok(_) => Ok(()),
+                Err(e) => (Err(RenderError::new(format!("Error rendering: {}", e)))),
             }
         }
     };
@@ -50,16 +50,13 @@ macro_rules! context_import_helper {
             _: &mut RenderContext,
             out: &mut dyn Output,
         ) -> Result<(), RenderError> {
-            match out.write(
-                &$fn(&c)
-            ){
-                Ok(_)=>Ok(()),
-                Err(e)=>(Err(RenderError::new(format!("Error rendering: {}", e))))
+            match out.write(&$fn(&c)) {
+                Ok(_) => Ok(()),
+                Err(e) => (Err(RenderError::new(format!("Error rendering: {}", e)))),
             }
         }
     };
 }
-
 
 basic_import_helper!(import_bytes => |param: String|{
     match super::get_file_content_bytes(&param){
@@ -153,7 +150,6 @@ basic_import_helper!(import_css_web => |param: String|{
     }
 });
 
-
 context_import_helper!(import_js_ipfs => |param: String, c: &Context|{
     match super::get_web_content_text(&format!("{}/{}", c.data().to_string(), &param)){
         Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
@@ -182,8 +178,10 @@ context_import_helper!(import_bytes_ipfs => |param: String, c: &Context|{
     }
 });
 
-context_import_helper!(inject_gateway = |c: &Context|{
-    minifier::js::minify(&format!("let IPFS_GATEWAY = {};
+context_import_helper!(
+    inject_gateway = |c: &Context| {
+        minifier::js::minify(&format!(
+            "let IPFS_GATEWAY = {};
     document.addEventListener('DOMContentLoaded', function() {{
         setInterval(()=>{{
             try{{
@@ -194,5 +192,8 @@ context_import_helper!(inject_gateway = |c: &Context|{
                 e.removeAttribute('ipfs');
             }})
         }}, 1000)
-    }});", c.data().to_string()))
-});
+    }});",
+            c.data().to_string()
+        ))
+    }
+);
