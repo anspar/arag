@@ -26,7 +26,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ubuntu-latest-bin
-          path: target/release/arag 
+          path: target/release/arag
 
   release-ubuntu:
     name: release-ubuntu
@@ -53,4 +53,3 @@ jobs:
           upload_url: ${{ steps.create-ubuntu-release.outputs.upload_url }}
           asset_path: ./arag
           asset_name: arag-0.${{ github.run_number }}.0
-
