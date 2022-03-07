@@ -24,7 +24,7 @@ jobs:
     needs: cargo-fmt
     runs-on: ubuntu-20.04
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - name: Create release
         uses: actions/create-release@v1
