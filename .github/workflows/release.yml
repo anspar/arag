@@ -19,8 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: cargo-fmt
     steps:
-      - name: Build for ubuntu
+      - name: Checkout code
         uses: actions/checkout@v1
+      - name: Build for ubuntu
         run: cargo build --release
       - name: Upload bin
         uses: actions/upload-artifact@v2
