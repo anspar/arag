@@ -1,13 +1,17 @@
 # Arag
-The official Anspar dapp builder.
 
-[Anspar Dev page](https://anspar.io/dev)
+## The official Anspar dapp builder.
 
-[Discord](https://discord.gg/ENQfPEcrZJ)
+![example workflow](https://github.com/anspar/arag/actions/workflows/build.yml/badge.svg?branch=develop)
+![example workflow](https://github.com/anspar/arag/actions/workflows/release.yml/badge.svg?branch=main)
 
-[Youtube](https://www.youtube.com/embed/6gErdx-llSg?list=PLynQF5IaLl6HypAzcdlxSqBdPshRNXtS6)
 
-<img src="https://ipfs.anspar.io/gateway/QmbFhtCDafQg29u9dQgdAdDtGNoHPftN2HibpoDdxMtaX6" width=320></img>
+Usage documentation -> [Anspar Dev page](https://anspar.io/dev)
+
+Report bugs, get support -> [Discord](https://discord.gg/ENQfPEcrZJ)
+
+Tutorials -> [Youtube](https://www.youtube.com/embed/6gErdx-llSg?list=PLynQF5IaLl6HypAzcdlxSqBdPshRNXtS6)
+
 ## Build
 `cargo build --release`
 
@@ -18,5 +22,7 @@ If necessary create `arag.yml` file and specify custom ipfs gateway for local de
 
     ipfs_gateway: "https://custom/ipfs/gateway"
 
+
+<img src="https://ipfs.anspar.io/gateway/QmbFhtCDafQg29u9dQgdAdDtGNoHPftN2HibpoDdxMtaX6" width=320></img>
 
 [anspar.io](https://anspar.io)
