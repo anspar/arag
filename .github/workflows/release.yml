@@ -61,7 +61,7 @@ jobs:
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./target/release/arag
-          asset_name: arag_0.1.${{ github.run_number }}
+          asset_name: arag_0.1.${{ github.run_number }}_${{ matrix.config.os }}
           asset_content_type: application/octet-stream
 
       - name: Upload Windows release
@@ -72,7 +72,7 @@ jobs:
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./target/release/arag.exe
-          asset_name: arag_0.1.${{ github.run_number }}.exe
+          asset_name: arag_0.1.${{ github.run_number }}_${{ matrix.config.os }}.exe
           asset_content_type: application/octet-stream
 
 
