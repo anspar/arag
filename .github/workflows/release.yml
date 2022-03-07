@@ -4,53 +4,75 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
 
 jobs:
   cargo-fmt:
     name: cargo-fmt
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v1
       - name: Check formatting with cargo fmt
         run: cargo fmt --all -- --check
 
-  build-ubuntu:
-    name: build-ubuntu
-    runs-on: ubuntu-latest
+  create-release:
+    name: create-release
     needs: cargo-fmt
+    runs-on: ubuntu-20.04
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v1
-      - name: Build for ubuntu
-        run: cargo build --release
-      - name: Upload bin
-        uses: actions/upload-artifact@v2
-        with:
-          name: ubuntu-latest-bin
-          path: target/release/arag
-
-  release-ubuntu:
-    name: release-ubuntu
-    runs-on: ubuntu-latest
-    needs: build-ubuntu
-    steps:
-      - name: Download ubuntu bin
-        uses: actions/download-artifact@v2
-        with:
-          name: ubuntu-latest-bin
-      - name: Create ubuntu release
+      - name: Create release
         uses: actions/create-release@v1
-        id: create-ubuntu-release
+        id: create-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v0.${{ github.run_number }}.0
-          release_name: Release v0.${{ github.run_number }}.0
-      - name: Upload ubuntu release
+          tag_name: v0.1.${{ github.run_number }}
+          release_name: Release v0.1.${{ github.run_number }}
+
+  build-release:
+    name: build-release
+
+    strategy:
+      matrix:
+        config:
+          - os: ubuntu-20.04
+          - os: macos-11
+          - os: windows-2022
+
+    runs-on: ${{ matrix.config.os }}
+    needs: create-release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v1
+      - name: Build bin
+        run: cargo build --release
+
+      - name: Upload release
+        if: matrix.config.os != 'windows-2022'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create-ubuntu-release.outputs.upload_url }}
-          asset_path: ./arag
-          asset_name: arag-0.${{ github.run_number }}.0
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./release/arag
+          asset_name: arag_0.1.${{ github.run_number }}
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows release
+        if: matrix.config.os == 'windows-2022'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./release/arag.exe
+          asset_name: arag_0.1.${{ github.run_number }}.exe
+          asset_content_type: application/octet-stream
+
+
