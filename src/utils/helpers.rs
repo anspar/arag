@@ -181,18 +181,20 @@ context_import_helper!(import_bytes_ipfs => |param: String, c: &Context|{
 context_import_helper!(
     inject_gateway = |c: &Context| {
         minifier::js::minify(&format!(
-            "let IPFS_GATEWAY = {};
-    document.addEventListener('DOMContentLoaded', function() {{
-        setInterval(()=>{{
-            try{{
-                if(IPFS_GATEWAY_INJECTED){{ IPFS_GATEWAY=IPFS_GATEWAY_INJECTED }}
-            }}catch(e){{}}
-            document.querySelectorAll('[ipfs]').forEach((e, i)=>{{
-                e.setAttribute('src', `${{IPFS_GATEWAY}}/${{e.getAttribute('ipfs')}}`);
-                e.removeAttribute('ipfs');
-            }})
-        }}, 1000)
-    }});",
+            "<script>
+            let IPFS_GATEWAY = {};
+            document.addEventListener('DOMContentLoaded', function() {{
+                setInterval(()=>{{
+                    try{{
+                        if(IPFS_GATEWAY_INJECTED){{ IPFS_GATEWAY=IPFS_GATEWAY_INJECTED }}
+                    }}catch(e){{}}
+                    document.querySelectorAll('[ipfs]').forEach((e, i)=>{{
+                        e.setAttribute('src', `${{IPFS_GATEWAY}}/${{e.getAttribute('ipfs')}}`);
+                        e.removeAttribute('ipfs');
+                    }})
+                }}, 1000)
+            }});
+            </script>",
             c.data().to_string()
         ))
     }

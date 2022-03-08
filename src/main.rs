@@ -4,7 +4,6 @@ use notify::{watcher, RecursiveMode, Watcher};
 use opener;
 use std::env;
 use std::error::Error;
-use std::fmt::format;
 use std::fs::File;
 use std::sync::mpsc::channel;
 use std::time::Duration;
