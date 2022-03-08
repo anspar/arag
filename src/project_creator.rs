@@ -45,13 +45,24 @@ fn create_folders(r_path: &str, name: &str) -> Result<(), std::io::Error> {
 pub fn create_new_project(r_path: &str, name: &str) -> Result<(), Box<dyn Error>> {
     create_folders(r_path, name)?;
     create_file_from_web(
-        &format!("{}/{}/{}", constants::PROJECT_URL, constants::TEMPLATE_DIR, constants::ENTRY_TEMPLATE),
+        &format!(
+            "{}/{}/{}",
+            constants::PROJECT_URL,
+            constants::TEMPLATE_DIR,
+            constants::ENTRY_TEMPLATE
+        ),
         &format!("{}/{}/{}", r_path, &name, constants::TEMPLATE_DIR),
         constants::ENTRY_TEMPLATE,
     )?;
 
     create_file_from_web(
-        &format!("{}/{}/{}/{}", constants::PROJECT_URL, constants::STATIC_DIR, constants::JAVASCRIPT_DIR, constants::JAVASCRIPT_FILE),
+        &format!(
+            "{}/{}/{}/{}",
+            constants::PROJECT_URL,
+            constants::STATIC_DIR,
+            constants::JAVASCRIPT_DIR,
+            constants::JAVASCRIPT_FILE
+        ),
         &format!(
             "{}/{}/{}/{}",
             r_path,
@@ -63,7 +74,13 @@ pub fn create_new_project(r_path: &str, name: &str) -> Result<(), Box<dyn Error>
     )?;
 
     create_file_from_web(
-        &format!("{}/{}/{}/{}", constants::PROJECT_URL, constants::STATIC_DIR, constants::CSS_DIR, constants::CSS_FILE),
+        &format!(
+            "{}/{}/{}/{}",
+            constants::PROJECT_URL,
+            constants::STATIC_DIR,
+            constants::CSS_DIR,
+            constants::CSS_FILE
+        ),
         &format!(
             "{}/{}/{}/{}",
             r_path,
@@ -75,7 +92,12 @@ pub fn create_new_project(r_path: &str, name: &str) -> Result<(), Box<dyn Error>
     )?;
 
     create_file_from_web(
-        &format!("{}/{}/{}", constants::PROJECT_URL, constants::STATIC_DIR, constants::IMAGE_FILE),
+        &format!(
+            "{}/{}/{}",
+            constants::PROJECT_URL,
+            constants::STATIC_DIR,
+            constants::IMAGE_FILE
+        ),
         &format!("{}/{}/{}", r_path, &name, constants::STATIC_DIR),
         constants::IMAGE_FILE,
     )?;
