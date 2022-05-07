@@ -232,6 +232,28 @@ basic_import_helper!(
 });
 
 basic_import_helper!(
+    /// Loads an arag component from web
+    ///
+    /// # Example
+    /// ```
+    /// ...
+    ///     {{web_component "https://example.com/component"}}
+    ///     <div>...</div>
+    /// </body>
+    /// ```
+    /// * the url should also be declared in arag.yml file under dependencies
+    /// ```
+    /// dependencies:
+    ///     - https://example.com/component
+    /// ```
+    web_component => |param: String|{
+    match super::get_file_content_text(&param){
+        Ok(v)=>v,
+        Err(e)=>{println!("Error importing web component: {}", style(e).red().bold()); "".to_owned()}
+    }
+});
+
+basic_import_helper!(
     /// Creates 'script' tag and puts minified javascript downloaded from web
     ///
     /// # Example
@@ -296,33 +318,13 @@ basic_import_helper!(
     }
 });
 
-// context_import_helper!(import_js_ipfs => |param: String, c: &Context|{
-//     match super::get_cached_content_text(&format!("{}/{}", c.data().to_string(), &param)){
-//         Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
-//         Err(e)=>{println!("Error importing js from web: {}", style(e).red().bold()); "".to_owned()}
-//     }
-// });
-
-// context_import_helper!(import_css_ipfs => |param: String, c: &Context|{
-//     match super::get_cached_content_text(&format!("{}/{}", c.data().to_string(), &param)){
-//         Ok(v)=>format!("<style>{}</style>", minifier::css::minify(&v).unwrap()),
-//         Err(e)=>{println!("Error importing css from web: {}", style(e).red().bold()); "".to_owned()}
-//     }
-// });
-
-// context_import_helper!(import_raw_ipfs => |param: String, c: &Context|{
-//     match super::get_cached_content_text(&format!("{}/{}", c.data().to_string(), &param)){
-//         Ok(v)=>v,
-//         Err(e)=>{println!("Error importing css from web: {}", style(e).red().bold()); "".to_owned()}
-//     }
-// });
-
 context_import_helper!(
-    /// Injects gateway to tags containing 'ipfs' parameter
-    /// will prepend an available ipfs gateway to the CID and place it in 'src'
+    /// Will prepend an available ipfs gateway to the CID and add it to the tag as 'src'
     ///
     /// # Example
     /// ```
+    ///     ...
+    ///
     ///     <img ipfs="bafkreihu2gmfalwwrgv6mgizjbncsy2b5surjjefbpwtkravfyvq5niqcm">
     ///
     ///     ...
