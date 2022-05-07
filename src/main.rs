@@ -134,7 +134,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Ok(v) => v,
         Err(_) => {
             println!("No arag.yml found, using defaults");
-            AragConf::defaults()
+            AragConf::default()
         }
     };
     match cache_dependencies(&conf.dependencies).await {
@@ -167,10 +167,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     hb.register_helper("import_bytes", Box::new(helpers::import_bytes));
     hb.register_helper("import_bytes_web", Box::new(helpers::import_bytes_web));
     hb.register_helper("import_content", Box::new(helpers::import_content));
-    // hb.register_helper("import_raw", Box::new(helpers::import_html));
-    // hb.register_helper("import_js_ipfs", Box::new(helpers::import_js_ipfs));
-    // hb.register_helper("import_css_ipfs", Box::new(helpers::import_css_ipfs));
-    // hb.register_helper("import_raw_ipfs", Box::new(helpers::import_raw_ipfs));
+    hb.register_helper("web_component", Box::new(helpers::web_component));
     hb.register_helper("inject_gateway", Box::new(helpers::inject_gateway));
     hb.register_helper("live_update", Box::new(helpers::live_update));
 

@@ -19,7 +19,7 @@ pub struct AragConf {
 }
 
 impl AragConf {
-    pub fn defaults() -> Self {
+    pub fn default() -> Self {
         Self {
             ipfs_gateway: constants::IPFS_GATEWAY.to_owned(),
             dependencies: vec![],
