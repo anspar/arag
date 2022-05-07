@@ -1,3 +1,1 @@
-console.log('js is included!');
-
-
+console.log("Hi from js");

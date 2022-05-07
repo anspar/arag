@@ -2,7 +2,8 @@ use console::style;
 use handlebars::{Context, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError};
 
 macro_rules! basic_import_helper {
-    ($name:ident => $fn:expr) => {
+    ($(#[$meta:meta])* $name:ident => $fn:expr) => {
+        $(#[$meta])*
         pub fn $name(
             h: &Helper,
             _: &Handlebars,
@@ -20,10 +21,27 @@ macro_rules! basic_import_helper {
             }
         }
     };
+
+    ($(#[$meta:meta])* $name:ident = $fn:expr) => {
+        $(#[$meta])*
+        pub fn $name(
+            _: &Helper,
+            _: &Handlebars,
+            _: &Context,
+            _: &mut RenderContext,
+            out: &mut dyn Output,
+        ) -> Result<(), RenderError> {
+            match out.write(&$fn()) {
+                Ok(_) => Ok(()),
+                Err(e) => (Err(RenderError::new(format!("Error rendering: {}", e)))),
+            }
+        }
+    };
 }
 
 macro_rules! context_import_helper {
-    ($name:ident => $fn:expr) => {
+    ($(#[$meta:meta])* $name:ident => $fn:expr) => {
+        $(#[$meta])*
         pub fn $name(
             h: &Helper,
             _: &Handlebars,
@@ -42,7 +60,8 @@ macro_rules! context_import_helper {
         }
     };
 
-    ($name:ident = $fn:expr) => {
+    ($(#[$meta:meta])* $name:ident = $fn:expr) => {
+        $(#[$meta])*
         pub fn $name(
             _: &Helper,
             _: &Handlebars,
@@ -58,35 +77,78 @@ macro_rules! context_import_helper {
     };
 }
 
-basic_import_helper!(import_bytes => |param: String|{
+basic_import_helper!(
+    /// Creates Uint8Array containing bytes of a file
+    ///
+    /// # Example
+    /// ```
+    /// <script>
+    ///     var bytes = {{import_bytes "static/file"}}
+    /// </script>
+    /// ```
+    import_bytes => |param: String|{
     match super::get_file_content_bytes(&param){
         Ok(v)=>format!("new Uint8Array({:?})", v),
         Err(e)=>{println!("Error importing bytes: {}", style(e).red().bold()); "[]".to_owned()}
     }
 });
 
-basic_import_helper!(import_wasm => |param: String|{
+basic_import_helper!(
+    /// Creates Uint8Array buffer containing bytes of a file
+    ///
+    /// # Example
+    /// ```
+    /// <script>
+    ///     var bytes = {{import_wasm "static/file.wasm"}}
+    /// </script>
+    /// ```
+    import_wasm => |param: String|{
     match super::get_file_content_bytes(&param){
         Ok(v)=>format!("new Uint8Array({:?}).buffer", v),
         Err(e)=>{println!("Error importing wasm: {}", style(e).red().bold()); "[]".to_owned()}
     }
 });
 
-basic_import_helper!(import_json => |param: String|{
+basic_import_helper!(
+    /// Loads the .json file
+    ///
+    /// # Example
+    /// ```
+    /// <script>
+    ///     var data = {{import_json "static/file.json"}}
+    /// </script>
+    /// ```
+    import_json => |param: String|{
     match super::get_file_content_text(&param){
         Ok(v)=>v,
         Err(e)=>{println!("Error importing json: {}", style(e).red().bold()); "".to_owned()}
     }
 });
 
-basic_import_helper!(import_html => |param: String|{
+basic_import_helper!(
+    /// Loads the content of a file
+    ///
+    /// # Example
+    /// ```
+    /// <script>
+    ///    {{import_content "static/file.js"}}
+    /// </script>
+    /// ```
+    import_content => |param: String|{
     match super::get_file_content_text(&param){
         Ok(v)=>v,
-        Err(e)=>{println!("Error importing html: {}", style(e).red().bold()); "".to_owned()}
+        Err(e)=>{println!("Error importing file content: {}", style(e).red().bold()); "".to_owned()}
     }
 });
 
-basic_import_helper!(import_audio => |param: String|{
+basic_import_helper!(
+    /// Creates base64 url of a audio file
+    ///
+    /// # Example
+    /// ```
+    /// <audio src="{{import_audio "static/file.mp3"}}"></audio>
+    /// ```
+    import_audio => |param: String|{
     let ext: Vec<&str> = param.split(".").collect();
     let ext = match ext.last(){
         Some(v)=>v.to_string(),
@@ -98,7 +160,14 @@ basic_import_helper!(import_audio => |param: String|{
     }
 });
 
-basic_import_helper!(import_video => |param: String|{
+basic_import_helper!(
+    /// Creates base64 url of a video file
+    ///
+    /// # Example
+    /// ```
+    /// <video src="{{import_video "static/file.mp4"}}"></video>
+    /// ```
+    import_video => |param: String|{
     let ext: Vec<&str> = param.split(".").collect();
     let ext = match ext.last(){
         Some(v)=>v.to_string(),
@@ -110,7 +179,14 @@ basic_import_helper!(import_video => |param: String|{
     }
 });
 
-basic_import_helper!(import_img => |param: String|{
+basic_import_helper!(
+    /// Creates base64 url of a audio file
+    ///
+    /// # Example
+    /// ```
+    /// <img src="{{import_img "static/file.png"}}"></img>
+    /// ```
+    import_img => |param: String|{
     let ext: Vec<&str> = param.split(".").collect();
     let ext = match ext.last(){
         Some(v)=>v.to_string(),
@@ -122,63 +198,138 @@ basic_import_helper!(import_img => |param: String|{
     }
 });
 
-basic_import_helper!(import_js => |param: String|{
+basic_import_helper!(
+    /// Creates 'script' tag and puts minified javascript in it
+    ///
+    /// # Example
+    /// ```
+    /// ...
+    ///     <div>...</div>
+    ///     {{import_js "static/js/index.js"}}
+    /// </body>
+    /// ```
+    import_js => |param: String|{
     match super::get_file_content_text(&param){
         Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
         Err(e)=>{println!("Error importing js: {}", style(e).red().bold()); "".to_owned()}
     }
 });
 
-basic_import_helper!(import_css => |param: String|{
+basic_import_helper!(
+    /// Creates 'style' tag and puts minified css in it
+    ///
+    /// # Example
+    /// ```
+    /// ...
+    ///     {{import_css "static/css/index.css"}}
+    /// </head>
+    /// ```
+    import_css => |param: String|{
     match super::get_file_content_text(&param){
         Ok(v)=>format!("<style>{}</style>", minifier::css::minify(&v).unwrap()),
         Err(e)=>{println!("Error importing css: {}", style(e).red().bold()); "".to_owned()}
     }
 });
 
-basic_import_helper!(import_js_web => |param: String|{
-    match super::get_web_content_text(&param){
+basic_import_helper!(
+    /// Creates 'script' tag and puts minified javascript downloaded from web
+    ///
+    /// # Example
+    /// ```
+    /// ...
+    ///     <div>...</div>
+    ///     {{import_js_web "https://example.com/index.js"}}
+    /// </body>
+    /// ```
+    /// * the url should also be declared in arag.yml file under dependencies
+    /// ```
+    /// dependencies:
+    ///     - https://example.com/index.js
+    /// ```
+    import_js_web => |param: String|{
+    match super::get_cached_content_text(&param){
         Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
         Err(e)=>{println!("Error importing js from web: {}", style(e).red().bold()); "".to_owned()}
     }
 });
 
-basic_import_helper!(import_css_web => |param: String|{
-    match super::get_web_content_text(&param){
+basic_import_helper!(
+    /// Creates 'style' tag and puts minified css downloaded from web
+    ///
+    /// # Example
+    /// ```
+    /// ...
+    ///     <div>...</div>
+    ///     {{import_css_web "https://example.com/index.css"}}
+    /// </head>
+    /// ```
+    /// * the url should also be declared in arag.yml file under dependencies
+    /// ```
+    /// dependencies:
+    ///     - https://example.com/index.css
+    /// ```
+    import_css_web => |param: String|{
+    match super::get_cached_content_text(&param){
         Ok(v)=>format!("<style>{}</style>", v),
         Err(e)=>{println!("Error importing css from web: {}", style(e).red().bold()); "".to_owned()}
     }
 });
 
-context_import_helper!(import_js_ipfs => |param: String, c: &Context|{
-    match super::get_web_content_text(&format!("{}/{}", c.data().to_string(), &param)){
-        Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
-        Err(e)=>{println!("Error importing js from web: {}", style(e).red().bold()); "".to_owned()}
-    }
-});
-
-context_import_helper!(import_css_ipfs => |param: String, c: &Context|{
-    match super::get_web_content_text(&format!("{}/{}", c.data().to_string(), &param)){
-        Ok(v)=>format!("<style>{}</style>", minifier::css::minify(&v).unwrap()),
-        Err(e)=>{println!("Error importing css from web: {}", style(e).red().bold()); "".to_owned()}
-    }
-});
-
-context_import_helper!(import_raw_ipfs => |param: String, c: &Context|{
-    match super::get_web_content_text(&format!("{}/{}", c.data().to_string(), &param)){
-        Ok(v)=>v,
-        Err(e)=>{println!("Error importing css from web: {}", style(e).red().bold()); "".to_owned()}
-    }
-});
-
-context_import_helper!(import_bytes_ipfs => |param: String, c: &Context|{
-    match super::get_web_content_bytes(&format!("{}/{}", c.data().to_string(), &param)){
+basic_import_helper!(
+    /// Creates Uint8Array containing bytes of a downloaded file
+    ///
+    /// # Example
+    /// ```
+    /// <script>
+    ///     var bytes = {{import_bytes_web "https://example.com/file"}}
+    /// </script>
+    /// ```
+    /// * the url should also be declared in arag.yml file under dependencies
+    /// ```
+    /// dependencies:
+    ///     - https://example.com/file
+    /// ```
+    import_bytes_web => |param: String|{
+    match super::get_cached_content_bytes(&param){
         Ok(v)=>format!("new Uint8Array({:?})", v),
         Err(e)=>{println!("Error importing bytes: {}", style(e).red().bold()); "[]".to_owned()}
     }
 });
 
+// context_import_helper!(import_js_ipfs => |param: String, c: &Context|{
+//     match super::get_cached_content_text(&format!("{}/{}", c.data().to_string(), &param)){
+//         Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
+//         Err(e)=>{println!("Error importing js from web: {}", style(e).red().bold()); "".to_owned()}
+//     }
+// });
+
+// context_import_helper!(import_css_ipfs => |param: String, c: &Context|{
+//     match super::get_cached_content_text(&format!("{}/{}", c.data().to_string(), &param)){
+//         Ok(v)=>format!("<style>{}</style>", minifier::css::minify(&v).unwrap()),
+//         Err(e)=>{println!("Error importing css from web: {}", style(e).red().bold()); "".to_owned()}
+//     }
+// });
+
+// context_import_helper!(import_raw_ipfs => |param: String, c: &Context|{
+//     match super::get_cached_content_text(&format!("{}/{}", c.data().to_string(), &param)){
+//         Ok(v)=>v,
+//         Err(e)=>{println!("Error importing css from web: {}", style(e).red().bold()); "".to_owned()}
+//     }
+// });
+
 context_import_helper!(
+    /// Injects gateway to tags containing 'ipfs' parameter
+    /// will prepend an available ipfs gateway to the CID and place it in 'src'
+    ///
+    /// # Example
+    /// ```
+    ///     <img ipfs="bafkreihu2gmfalwwrgv6mgizjbncsy2b5surjjefbpwtkravfyvq5niqcm">
+    ///
+    ///     ...
+    ///
+    ///     {{inject_gateway}}
+    /// </body>
+    /// ```
     inject_gateway = |c: &Context| {
         minifier::js::minify(&format!(
             "<script>
@@ -189,7 +340,7 @@ context_import_helper!(
                         if(IPFS_GATEWAY_INJECTED){{ IPFS_GATEWAY=IPFS_GATEWAY_INJECTED }}
                     }}catch(e){{}}
                     document.querySelectorAll('[ipfs]').forEach((e, i)=>{{
-                        e.setAttribute('src', `${{IPFS_GATEWAY}}/${{e.getAttribute('ipfs')}}`);
+                        e.setAttribute('src', `${{IPFS_GATEWAY}}${{IPFS_GATEWAY.endsWith('/')?'':'/'}}${{e.getAttribute('ipfs')}}`);
                         e.removeAttribute('ipfs');
                     }})
                 }}, 1000)
@@ -197,5 +348,31 @@ context_import_helper!(
             </script>",
             c.data().to_string()
         ))
+    }
+);
+
+basic_import_helper!(
+    /// Reloads the page if files are updated
+    /// * Should only be used during development
+    ///
+    /// # Example
+    /// ```
+    /// ...
+    ///     {{live_update}}
+    /// </body>
+    /// ```
+    live_update = || {
+        "<script>
+    setInterval(()=>{
+        fetch('/update').then(res=>{
+            if(res.status!==200) console.error('failed fetching state');
+            res.json().then(data=>{
+                if(data.update===true) window.location.reload();
+            })
+        })
+        }, 1000
+    );
+    </script>
+    "
     }
 );

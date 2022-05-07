@@ -23,6 +23,6 @@ If necessary create `arag.yml` file and specify custom ipfs gateway for local de
     ipfs_gateway: "https://custom/ipfs/gateway"
 
 
-<img src="https://ipfs.anspar.io/gateway/QmbFhtCDafQg29u9dQgdAdDtGNoHPftN2HibpoDdxMtaX6" width=320></img>
+<img src="static/logo.png" width=320></img>
 
 [anspar.io](https://anspar.io)

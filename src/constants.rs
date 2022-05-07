@@ -6,15 +6,10 @@ pub static CSS_DIR: &str = "css";
 pub static JAVASCRIPT_FILE: &str = "index.js";
 pub static CSS_FILE: &str = "index.css";
 pub static IMAGE_FILE: &str = "logo.png";
+pub static CACHE_DIR: &str = ".cache";
 
 // IPFS
 pub static IPFS_GATEWAY: &str = "https://ipfs.anspar.io/gateway";
-// pub static CID_HTML: &str = "QmYsv4SdxduRwn2KdR3dG2BoqnNhhkYk7BwgASxSZ3pv1Y";
-// pub static CID_JS: &str = "QmXDpwgw14uJjkkq4yUMNaspSkwPufDvbw6rp4rd7Xq4Qv";
-// pub static CID_CSS: &str = "QmQKrx745sM1nY7GKMupMPdECu5eNwaxZajZzc5FW4Pmxh";
-// pub static CID_LOGO: &str = "QmbFhtCDafQg29u9dQgdAdDtGNoHPftN2HibpoDdxMtaX6";
-// pub static CID_WASM_BIN: &str = "";
-// pub static CID_WASM_JS: &str = "";
 
 // GITHUB
 pub static PROJECT_URL: &str = "https://raw.githubusercontent.com/anspar/arag/main";
