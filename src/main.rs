@@ -1,56 +1,79 @@
+#[macro_use]
+extern crate rocket;
 use console::style;
 use handlebars::Handlebars;
 use notify::{watcher, RecursiveMode, Watcher};
 use opener;
+use rocket::fairing::AdHoc;
+use rocket::figment::Figment;
+use rocket::http::Status;
+use rocket::response::content::{Html, Json};
+use rocket::response::status;
+use rocket::{tokio, State};
 use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::sync::mpsc::channel;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use utils::cache::cache_from_web;
 mod types;
 mod utils;
 use utils::{cli, helpers, yaml_parser};
 
-use crate::types::AragConf;
+use crate::types::{AragConf, AragState};
 mod constants;
 mod project_creator;
 
-fn pkg(hb: &mut Handlebars, r_path: &str, entry: &str, gateway: &str) -> String {
+fn pkg(state: AragState, file: bool) -> String {
+    let mut hb = state.hb.lock().unwrap();
     hb.clear_templates();
-    match hb.register_templates_directory(".html", entry) {
+    match hb.register_templates_directory(".html", state.entry_dir) {
         Err(e) => {
             println!("Can't render the template: {}", style(e).red().bold());
             return "".to_owned();
         }
         _ => {}
     };
-    let path = format!("{}/build.html", r_path);
-    match File::create(&path) {
-        Ok(mut output_file) => {
-            match hb.render_to_write("index", &gateway, &mut output_file) {
-                Err(e) => {
-                    println!("Can't write to the build file: {}", style(e).red().bold());
-                    return "".to_owned();
-                }
-                _ => {}
-            };
+    if file {
+        let path = format!("{}/build.html", &state.root_dir_path);
+        match File::create(&path) {
+            Ok(mut output_file) => {
+                match hb.render_to_write("index", &state.conf.ipfs_gateway, &mut output_file) {
+                    Err(e) => {
+                        println!("Can't write to the build file: {}", style(e).red().bold());
+                        return "".to_owned();
+                    }
+                    _ => {}
+                };
+            }
+            Err(e) => {
+                println!("Can't create the build file: {}", style(e).red().bold());
+                return "".to_owned();
+            }
         }
-        Err(e) => {
-            println!("Can't create the build file: {}", style(e).red().bold());
-            return "".to_owned();
+        println!("{}", style("Build finished").green());
+        path
+    } else {
+        match hb.render("index", &state.conf.ipfs_gateway) {
+            Err(e) => {
+                println!("Can't render 'index.html': {}", style(e).red().bold());
+                return "".to_owned();
+            }
+            Ok(v) => v,
         }
     }
-    println!("{}", style("Build finished").green());
-    path
 }
 
-fn start_dir_watcher(hb: &mut Handlebars, r_path: &str, entry: &str, gateway: &str) {
+fn start_dir_watcher(state: AragState) {
     let (tx, rx) = channel();
     let mut watcher = watcher(tx, Duration::from_millis(100)).unwrap();
-    watcher.watch(&entry, RecursiveMode::Recursive).unwrap();
+    watcher
+        .watch(&state.entry_dir, RecursiveMode::Recursive)
+        .unwrap();
     watcher
         .watch(
-            format!("{}/{}", &r_path, &constants::STATIC_DIR),
+            format!("{}/{}", &state.root_dir_path, &constants::STATIC_DIR),
             RecursiveMode::Recursive,
         )
         .expect(&format!("No {} dir", style(&constants::STATIC_DIR).red()));
@@ -58,7 +81,9 @@ fn start_dir_watcher(hb: &mut Handlebars, r_path: &str, entry: &str, gateway: &s
         match rx.recv() {
             Ok(e) => match e {
                 notify::DebouncedEvent::NoticeWrite(_) => {
-                    pkg(hb, r_path, entry, gateway);
+                    // println!("{}", style("File changes detected").green().bold());
+                    let mut fu = state.files_updated.lock().unwrap();
+                    *fu = true;
                 }
                 _ => continue,
             },
@@ -67,9 +92,33 @@ fn start_dir_watcher(hb: &mut Handlebars, r_path: &str, entry: &str, gateway: &s
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let opt = cli::get_args();
+async fn cache_dependencies(dep: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+    for d in dep {
+        let hash = cache_from_web(d).await?;
+        println!("Cached as {}", style(hash).green().bold());
+    }
+    Ok(())
+}
 
+#[get("/")]
+pub async fn index(state: &State<AragState<'_>>) -> status::Custom<Html<String>> {
+    let state = &**state;
+    let build = pkg(state.clone(), false);
+    let mut su = state.files_updated.lock().unwrap();
+    *su = false;
+    status::Custom(Status::Ok, Html(build))
+}
+
+#[get("/update")]
+pub async fn update(state: &State<AragState<'_>>) -> status::Custom<Json<String>> {
+    let state = &**state;
+    let fu = state.files_updated.lock().unwrap();
+    status::Custom(Status::Ok, Json(format!("{{\"update\": {fu}}}")))
+}
+
+#[rocket::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let opt = cli::get_args();
     let r_path = match env::current_dir() {
         Ok(v) => v,
         Err(e) => {
@@ -88,7 +137,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             AragConf::defaults()
         }
     };
-
+    match cache_dependencies(&conf.dependencies).await {
+        Err(e) => {
+            eprintln!("{e}");
+            return Ok(());
+        }
+        _ => {}
+    }
     let entry_dir = match opt.entry {
         Some(v) => format!("{}/{}", &r_path.display().to_string(), v),
         None => format!(
@@ -102,8 +157,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     hb.register_helper("import_js", Box::new(helpers::import_js));
     hb.register_helper("import_js_web", Box::new(helpers::import_js_web));
-    hb.register_helper("import_html", Box::new(helpers::import_html));
-    hb.register_helper("import_raw", Box::new(helpers::import_html));
     hb.register_helper("import_img", Box::new(helpers::import_img));
     hb.register_helper("import_video", Box::new(helpers::import_video));
     hb.register_helper("import_audio", Box::new(helpers::import_audio));
@@ -112,19 +165,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     hb.register_helper("import_json", Box::new(helpers::import_json));
     hb.register_helper("import_wasm", Box::new(helpers::import_wasm));
     hb.register_helper("import_bytes", Box::new(helpers::import_bytes));
-    hb.register_helper("import_js_ipfs", Box::new(helpers::import_js_ipfs));
-    hb.register_helper("import_css_ipfs", Box::new(helpers::import_css_ipfs));
-    hb.register_helper("import_bytes_ipfs", Box::new(helpers::import_bytes_ipfs));
-    hb.register_helper("import_raw_ipfs", Box::new(helpers::import_raw_ipfs));
+    hb.register_helper("import_bytes_web", Box::new(helpers::import_bytes_web));
+    hb.register_helper("import_content", Box::new(helpers::import_content));
+    // hb.register_helper("import_raw", Box::new(helpers::import_html));
+    // hb.register_helper("import_js_ipfs", Box::new(helpers::import_js_ipfs));
+    // hb.register_helper("import_css_ipfs", Box::new(helpers::import_css_ipfs));
+    // hb.register_helper("import_raw_ipfs", Box::new(helpers::import_raw_ipfs));
     hb.register_helper("inject_gateway", Box::new(helpers::inject_gateway));
+    hb.register_helper("live_update", Box::new(helpers::live_update));
 
+    // let hb = Arc::new(Mutex::new(hb));
+    let arag_state = AragState {
+        root_dir_path: r_path.display().to_string(),
+        conf,
+        entry_dir,
+        hb: Arc::new(Mutex::new(hb)),
+        files_updated: Arc::new(Mutex::new(true)),
+    };
     if opt.pkg {
-        let p = pkg(
-            &mut hb,
-            &r_path.display().to_string(),
-            &entry_dir,
-            &conf.ipfs_gateway,
-        );
+        let p = pkg(arag_state, true);
         if !p.eq("") {
             println!("Find the file at: {}", style(p).green().bold());
         }
@@ -132,23 +191,33 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if opt.show {
-        let p = pkg(
-            &mut hb,
-            &r_path.display().to_string(),
-            &entry_dir,
-            &conf.ipfs_gateway,
-        );
-        if p.eq("") {
-            return Ok(());
-        }
-        let _ = opener::open(p)?;
+        let figment = Figment::from(rocket::Config::default())
+            .merge(("log_level", "off"))
+            .merge(("port", 16161u64))
+            .merge(("address", "0.0.0.0"));
+        let _ = rocket::custom(figment)
+            .mount("/", routes![index, update])
+            .manage(arag_state)
+            .attach(AdHoc::on_liftoff("Directory Watcher", |r| {
+                Box::pin(async move {
+                    let state = r.state::<AragState>().unwrap().clone();
+                    tokio::spawn(async move {
+                        start_dir_watcher(state);
+                    });
+                })
+            }))
+            .attach(AdHoc::on_liftoff("Directory Watcher", |_| {
+                Box::pin(async move {
+                    println!(
+                        "\n\tServing on {}",
+                        style("http://0.0.0.0:16161").green().bold()
+                    );
+                    let _ = opener::open("http://0.0.0.0:16161").unwrap();
+                })
+            }))
+            .launch()
+            .await;
 
-        start_dir_watcher(
-            &mut hb,
-            &r_path.display().to_string(),
-            &entry_dir,
-            &conf.ipfs_gateway,
-        );
         return Ok(());
     }
 
@@ -156,6 +225,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         match v {
             cli::Command::New { name } => {
                 project_creator::create_new_project(&r_path.display().to_string(), &name)
+                    .await
                     .unwrap_or_else(|e| {
                         println!("Failed to create new project: {}", style(e).red())
                     });

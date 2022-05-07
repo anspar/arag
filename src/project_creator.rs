@@ -9,8 +9,8 @@ use console::style;
 
 use crate::{constants, utils::get_web_content_bytes};
 
-fn create_file_from_web(url: &str, path: &str, name: &str) -> Result<(), Box<dyn Error>> {
-    let file_bytes = get_web_content_bytes(url)?;
+async fn create_file_from_web(url: &str, path: &str, name: &str) -> Result<(), Box<dyn Error>> {
+    let file_bytes = get_web_content_bytes(url).await?;
     let mut fio = File::create(format!("{}/{}", path, name))?;
     fio.write_all(&file_bytes)?;
     Ok(())
@@ -42,7 +42,7 @@ fn create_folders(r_path: &str, name: &str) -> Result<(), std::io::Error> {
     ))
 }
 
-pub fn create_new_project(r_path: &str, name: &str) -> Result<(), Box<dyn Error>> {
+pub async fn create_new_project(r_path: &str, name: &str) -> Result<(), Box<dyn Error>> {
     create_folders(r_path, name)?;
     create_file_from_web(
         &format!(
@@ -53,7 +53,8 @@ pub fn create_new_project(r_path: &str, name: &str) -> Result<(), Box<dyn Error>
         ),
         &format!("{}/{}/{}", r_path, &name, constants::TEMPLATE_DIR),
         constants::ENTRY_TEMPLATE,
-    )?;
+    )
+    .await?;
 
     create_file_from_web(
         &format!(
@@ -71,7 +72,8 @@ pub fn create_new_project(r_path: &str, name: &str) -> Result<(), Box<dyn Error>
             constants::JAVASCRIPT_DIR
         ),
         constants::JAVASCRIPT_FILE,
-    )?;
+    )
+    .await?;
 
     create_file_from_web(
         &format!(
@@ -89,7 +91,8 @@ pub fn create_new_project(r_path: &str, name: &str) -> Result<(), Box<dyn Error>
             constants::CSS_DIR
         ),
         constants::CSS_FILE,
-    )?;
+    )
+    .await?;
 
     create_file_from_web(
         &format!(
@@ -100,7 +103,8 @@ pub fn create_new_project(r_path: &str, name: &str) -> Result<(), Box<dyn Error>
         ),
         &format!("{}/{}/{}", r_path, &name, constants::STATIC_DIR),
         constants::IMAGE_FILE,
-    )?;
+    )
+    .await?;
 
     println!("Created project {}", style(name).green().bold());
     Ok(())
