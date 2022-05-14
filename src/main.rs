@@ -7,8 +7,7 @@ use opener;
 use rocket::fairing::AdHoc;
 use rocket::figment::Figment;
 use rocket::http::Status;
-use rocket::response::content::{Html, Json};
-use rocket::response::status;
+use rocket::response::{content, status};
 use rocket::{tokio, State};
 use std::env;
 use std::error::Error;
@@ -114,19 +113,22 @@ async fn cache_dependencies(dep: &Vec<String>) -> Result<(), Box<dyn std::error:
 }
 
 #[get("/")]
-pub async fn index(state: &State<AragState<'_>>) -> status::Custom<Html<String>> {
+pub fn index(state: &State<AragState<'_>>) -> status::Custom<content::RawHtml<String>> {
     let state = &**state;
     let build = pkg(state.clone(), false);
     let mut su = state.files_updated.lock().unwrap();
     *su = false;
-    status::Custom(Status::Ok, Html(build))
+    status::Custom(Status::Ok, content::RawHtml(build))
 }
 
 #[get("/update")]
-pub async fn update(state: &State<AragState<'_>>) -> status::Custom<Json<String>> {
+pub fn update(state: &State<AragState<'_>>) -> status::Custom<content::RawJson<String>> {
     let state = &**state;
     let fu = state.files_updated.lock().unwrap();
-    status::Custom(Status::Ok, Json(format!("{{\"update\": {fu}}}")))
+    status::Custom(
+        Status::Ok,
+        content::RawJson(format!("{{\"update\": {fu}}}")),
+    )
 }
 
 #[rocket::main]

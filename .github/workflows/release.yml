@@ -50,8 +50,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v1
-      - name: Build bin
+      
+      - name: Build Linux
+        if: matrix.config.os != 'windows-2022'
         run: VERSION=0.2.${{ github.run_number }} cargo build --release
+
+      - name: Build Win
+        if: matrix.config.os == 'windows-2022'
+        run: SET VERSION=0.2.${{ github.run_number }} & cargo build --release
 
       - name: Upload release
         if: matrix.config.os != 'windows-2022'
@@ -74,5 +80,3 @@ jobs:
           asset_path: ./target/release/arag.exe
           asset_name: arag.exe
           asset_content_type: application/octet-stream
-
-
