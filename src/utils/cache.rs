@@ -11,7 +11,7 @@ fn create_cache_dir() -> Result<bool, std::io::Error> {
     match cache_exists() {
         Ok(v) => Ok(v),
         Err(e) => {
-            println!("{e}");
+            println!("{e} -> Creating directory for cache");
             let r_path = env::current_dir()?.display().to_string();
             fs::create_dir(format!("{r_path}/{}", crate::constants::CACHE_DIR))?;
             Ok(true)
