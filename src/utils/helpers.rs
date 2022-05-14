@@ -333,6 +333,7 @@ context_import_helper!(
     /// </body>
     /// ```
     inject_gateway = |c: &Context| {
+        let ipfs = c.data().get("ipfs_gateway").unwrap();
         minifier::js::minify(&format!(
             "<script>
             let IPFS_GATEWAY = {};
@@ -348,7 +349,7 @@ context_import_helper!(
                 }}, 1000)
             }});
             </script>",
-            c.data().to_string()
+            ipfs
         ))
     }
 );

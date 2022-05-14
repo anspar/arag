@@ -13,19 +13,20 @@ use rocket::{tokio, State};
 use std::env;
 use std::error::Error;
 use std::fs::File;
+use std::io::Write;
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use utils::cache::cache_from_web;
 mod types;
 mod utils;
-use utils::{cli, helpers, yaml_parser};
+use utils::{helpers, yaml_parser};
 
-use crate::types::{AragConf, AragState};
+use types::{cli, AragConf, AragState, Context};
 mod constants;
 mod project_creator;
 
-fn pkg(state: AragState, file: bool) -> String {
+fn pkg(state: AragState, release: bool) -> String {
     let mut hb = state.hb.lock().unwrap();
     hb.clear_templates();
     match hb.register_templates_directory(".html", state.entry_dir) {
@@ -35,11 +36,29 @@ fn pkg(state: AragState, file: bool) -> String {
         }
         _ => {}
     };
-    if file {
+    let ipfs_gateway = match state.conf.ipfs_gateway {
+        Some(v) => v,
+        None => constants::IPFS_GATEWAY.to_owned(),
+    };
+    let context = Context {
+        ipfs_gateway,
+        release,
+    };
+
+    let render =
+        match hb.render_with_context("index", &handlebars::Context::wraps(context).unwrap()) {
+            Err(e) => {
+                println!("Can't render 'index.html': {}", style(e).red().bold());
+                return "".to_owned();
+            }
+            Ok(v) => v,
+        };
+
+    if release {
         let path = format!("{}/build.html", &state.root_dir_path);
         match File::create(&path) {
             Ok(mut output_file) => {
-                match hb.render_to_write("index", &state.conf.ipfs_gateway, &mut output_file) {
+                match output_file.write(render.as_bytes()) {
                     Err(e) => {
                         println!("Can't write to the build file: {}", style(e).red().bold());
                         return "".to_owned();
@@ -53,16 +72,10 @@ fn pkg(state: AragState, file: bool) -> String {
             }
         }
         println!("{}", style("Build finished").green());
-        path
-    } else {
-        match hb.render("index", &state.conf.ipfs_gateway) {
-            Err(e) => {
-                println!("Can't render 'index.html': {}", style(e).red().bold());
-                return "".to_owned();
-            }
-            Ok(v) => v,
-        }
+        return path;
     }
+
+    render
 }
 
 fn start_dir_watcher(state: AragState) {
@@ -118,7 +131,7 @@ pub async fn update(state: &State<AragState<'_>>) -> status::Custom<Json<String>
 
 #[rocket::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let opt = cli::get_args();
+    let opt = cli::Opt::get_args();
     let r_path = match env::current_dir() {
         Ok(v) => v,
         Err(e) => {
@@ -132,8 +145,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let conf = match yaml_parser::get_conf(&format!("{}/arag.yml", r_path.display())) {
         Ok(v) => v,
-        Err(_) => {
-            println!("No arag.yml found, using defaults");
+        Err(e) => {
+            println!("Error parsing arag.yml '{e}'. Using defaults");
             AragConf::default()
         }
     };
@@ -171,7 +184,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     hb.register_helper("inject_gateway", Box::new(helpers::inject_gateway));
     hb.register_helper("live_update", Box::new(helpers::live_update));
 
-    // let hb = Arc::new(Mutex::new(hb));
     let arag_state = AragState {
         root_dir_path: r_path.display().to_string(),
         conf,
@@ -179,58 +191,49 @@ async fn main() -> Result<(), Box<dyn Error>> {
         hb: Arc::new(Mutex::new(hb)),
         files_updated: Arc::new(Mutex::new(true)),
     };
-    if opt.pkg {
-        let p = pkg(arag_state, true);
-        if !p.eq("") {
-            println!("Find the file at: {}", style(p).green().bold());
+    match opt.cmd {
+        cli::Command::New { name } => {
+            project_creator::create_new_project(&r_path.display().to_string(), &name)
+                .await
+                .unwrap_or_else(|e| println!("Failed to create new project: {}", style(e).red()));
+            return Ok(());
         }
-        return Ok(());
-    }
+        cli::Command::Show => {
+            let figment = Figment::from(rocket::Config::default())
+                .merge(("log_level", "off"))
+                .merge(("port", 16161u64))
+                .merge(("address", "0.0.0.0"));
+            let _ = rocket::custom(figment)
+                .mount("/", routes![index, update])
+                .manage(arag_state)
+                .attach(AdHoc::on_liftoff("Directory Watcher", |r| {
+                    Box::pin(async move {
+                        let state = r.state::<AragState>().unwrap().clone();
+                        tokio::spawn(async move {
+                            start_dir_watcher(state);
+                        });
+                    })
+                }))
+                .attach(AdHoc::on_liftoff("Directory Watcher", |_| {
+                    Box::pin(async move {
+                        println!(
+                            "\n\tServing on {}",
+                            style("http://0.0.0.0:16161").green().bold()
+                        );
+                        let _ = opener::open("http://0.0.0.0:16161").unwrap();
+                    })
+                }))
+                .launch()
+                .await;
 
-    if opt.show {
-        let figment = Figment::from(rocket::Config::default())
-            .merge(("log_level", "off"))
-            .merge(("port", 16161u64))
-            .merge(("address", "0.0.0.0"));
-        let _ = rocket::custom(figment)
-            .mount("/", routes![index, update])
-            .manage(arag_state)
-            .attach(AdHoc::on_liftoff("Directory Watcher", |r| {
-                Box::pin(async move {
-                    let state = r.state::<AragState>().unwrap().clone();
-                    tokio::spawn(async move {
-                        start_dir_watcher(state);
-                    });
-                })
-            }))
-            .attach(AdHoc::on_liftoff("Directory Watcher", |_| {
-                Box::pin(async move {
-                    println!(
-                        "\n\tServing on {}",
-                        style("http://0.0.0.0:16161").green().bold()
-                    );
-                    let _ = opener::open("http://0.0.0.0:16161").unwrap();
-                })
-            }))
-            .launch()
-            .await;
-
-        return Ok(());
-    }
-
-    if let Some(v) = opt.cmd {
-        match v {
-            cli::Command::New { name } => {
-                project_creator::create_new_project(&r_path.display().to_string(), &name)
-                    .await
-                    .unwrap_or_else(|e| {
-                        println!("Failed to create new project: {}", style(e).red())
-                    });
-                return Ok(());
+            return Ok(());
+        }
+        cli::Command::Release => {
+            let p = pkg(arag_state, true);
+            if !p.eq("") {
+                println!("Find the file at: {}", style(p).green().bold());
             }
+            return Ok(());
         }
     }
-
-    println!("Use -h to see available options");
-    Ok(())
 }

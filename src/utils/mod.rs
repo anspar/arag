@@ -62,6 +62,5 @@ fn get_cached_content_bytes(name: &str) -> Result<Vec<u8>, std::io::Error> {
     ))
 }
 
-pub mod cli;
 pub mod helpers;
 pub mod yaml_parser;

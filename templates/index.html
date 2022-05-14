@@ -7,6 +7,9 @@
     {{import_css "static/css/index.css"}}
 </head>
 <body>
+    {{#unless release}}
+        {{live_update}}
+    {{/unless}}
     <div class="main">
         <h1>Arag</h1>
         <h2>Anspar Dapp Builder</h3>
@@ -23,7 +26,6 @@
     </div>
     {{inject_gateway}}
     {{import_js "static/js/index.js"}} 
-    {{live_update}}
 </body>
 </html>
             

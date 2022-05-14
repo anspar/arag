@@ -51,7 +51,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v1
       - name: Build bin
-        run: cargo build --release
+        run: VERSION=0.2.${{ github.run_number }} cargo build --release
 
       - name: Upload release
         if: matrix.config.os != 'windows-2022'
@@ -61,7 +61,7 @@ jobs:
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./target/release/arag
-          asset_name: arag_0.2.${{ github.run_number }}_${{ matrix.config.os }}
+          asset_name: arag_${{ matrix.config.os }}
           asset_content_type: application/octet-stream
 
       - name: Upload Windows release
@@ -72,7 +72,7 @@ jobs:
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./target/release/arag.exe
-          asset_name: arag_0.2.${{ github.run_number }}_${{ matrix.config.os }}.exe
+          asset_name: arag.exe
           asset_content_type: application/octet-stream
 
 
