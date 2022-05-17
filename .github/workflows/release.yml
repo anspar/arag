@@ -53,11 +53,11 @@ jobs:
       
       - name: Build Linux
         if: matrix.config.os != 'windows-2022'
-        run: VERSION=0.2.${{ github.run_number }} cargo build --release
+        run: ARAG_VERSION=0.2.${{ github.run_number }} cargo build --release
 
       - name: Build Win
         if: matrix.config.os == 'windows-2022'
-        run: SET VERSION=0.2.${{ github.run_number }} & cargo build --release
+        run: SET ARAG_VERSION=0.2.${{ github.run_number }} & cargo build --release
 
       - name: Upload release
         if: matrix.config.os != 'windows-2022'
@@ -80,3 +80,24 @@ jobs:
           asset_path: ./target/release/arag.exe
           asset_name: arag.exe
           asset_content_type: application/octet-stream
+
+  build-docs:
+    name: build-docs
+    runs-on: ubuntu-20.04
+    needs: create-release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v1
+      - name: Build
+        run: cargo doc --no-deps && tar -C ./target -cf doc.tar doc
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./doc.tar
+          asset_name: doc.tar
+          asset_content_type: application/x-tar
+      
+

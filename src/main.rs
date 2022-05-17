@@ -1,7 +1,9 @@
 #[macro_use]
 extern crate rocket;
 use console::style;
+use constants::{IPFS_GATEWAY, SERVER_PORT};
 use handlebars::Handlebars;
+use minify_html::{minify, Cfg};
 use notify::{watcher, RecursiveMode, Watcher};
 use opener;
 use rocket::fairing::AdHoc;
@@ -35,10 +37,7 @@ fn pkg(state: AragState, release: bool) -> String {
         }
         _ => {}
     };
-    let ipfs_gateway = match state.conf.ipfs_gateway {
-        Some(v) => v,
-        None => constants::IPFS_GATEWAY.to_owned(),
-    };
+    let ipfs_gateway = state.conf.ipfs_gateway.unwrap_or(IPFS_GATEWAY.to_owned());
     let context = Context {
         ipfs_gateway,
         release,
@@ -52,12 +51,16 @@ fn pkg(state: AragState, release: bool) -> String {
             }
             Ok(v) => v,
         };
+    let mut cfg = Cfg::new();
+    cfg.minify_css = true;
+    cfg.minify_js = true;
+    let render = minify(render.as_bytes(), &cfg);
 
     if release {
         let path = format!("{}/build.html", &state.root_dir_path);
         match File::create(&path) {
             Ok(mut output_file) => {
-                match output_file.write(render.as_bytes()) {
+                match output_file.write(&render) {
                     Err(e) => {
                         println!("Can't write to the build file: {}", style(e).red().bold());
                         return "".to_owned();
@@ -74,7 +77,7 @@ fn pkg(state: AragState, release: bool) -> String {
         return path;
     }
 
-    render
+    String::from_utf8(render).unwrap_or("Failed to render :(".to_owned())
 }
 
 fn start_dir_watcher(state: AragState) {
@@ -201,9 +204,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             return Ok(());
         }
         cli::Command::Show => {
+            let port = arag_state.conf.port.unwrap_or(SERVER_PORT);
             let figment = Figment::from(rocket::Config::default())
                 .merge(("log_level", "off"))
-                .merge(("port", 16161u64))
+                .merge(("port", port))
                 .merge(("address", "0.0.0.0"));
             let _ = rocket::custom(figment)
                 .mount("/", routes![index, update])
@@ -216,13 +220,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         });
                     })
                 }))
-                .attach(AdHoc::on_liftoff("Directory Watcher", |_| {
+                .attach(AdHoc::on_liftoff("Directory Watcher", move |_| {
                     Box::pin(async move {
                         println!(
                             "\n\tServing on {}",
-                            style("http://0.0.0.0:16161").green().bold()
+                            style(format!("http://0.0.0.0:{port}")).green().bold()
                         );
-                        let _ = opener::open("http://0.0.0.0:16161").unwrap();
+                        let _ = opener::open(format!("http://0.0.0.0:{port}")).unwrap();
                     })
                 }))
                 .launch()

@@ -13,3 +13,5 @@ pub static IPFS_GATEWAY: &str = "https://ipfs.anspar.io/gateway";
 
 // GITHUB
 pub static PROJECT_URL: &str = "https://raw.githubusercontent.com/anspar/arag/main";
+
+pub static SERVER_PORT: u64 = 16161;

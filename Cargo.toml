@@ -1,6 +1,6 @@
 [package]
 name = "arag"
-version = "0.1.6"
+version = "0.1.0"
 authors = ["Vahe Grigoryan <vahe@anspar.io>"]
 edition = "2018"
 
@@ -14,7 +14,7 @@ structopt = "0.3.25" # MIT
 opener = "0.5.0" # MIT
 console = "0.15.0" # MIT
 serde_yaml = "0.8"
-notify = "4.0.17" # CCO or  Artistic License 2.0
-minifier = "0.0.42" # MIT
+notify = "4.0.17" # CCO or Artistic License 2.0
 rocket = { version = "0.5.0-rc.2", features = ["json"] }
 sha2 = "0.10.2" # MIT
+minify-html = { version = "0.8.0", features = ["js-esbuild"] } #MIT

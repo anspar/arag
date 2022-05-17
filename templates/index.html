@@ -10,6 +10,7 @@
     {{#unless release}}
         {{live_update}}
     {{/unless}}
+    {{inject_gateway}}
     <div class="main">
         <h1>Arag</h1>
         <h2>Anspar Dapp Builder</h3>
@@ -24,7 +25,6 @@
             <a target="_blank" href="https://handlebarsjs.com/guide/expressions.html">Handlebars Docs</a>
         </div>
     </div>
-    {{inject_gateway}}
     {{import_js "static/js/index.js"}} 
 </body>
 </html>

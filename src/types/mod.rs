@@ -2,19 +2,23 @@ use std::sync::{Arc, Mutex};
 
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
+
+use crate::constants::{IPFS_GATEWAY, SERVER_PORT};
 pub mod cli;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AragConf {
     pub ipfs_gateway: Option<String>,
     pub dependencies: Vec<String>,
+    pub port: Option<u64>,
 }
 
 impl AragConf {
     pub fn default() -> Self {
         Self {
-            ipfs_gateway: None,
+            ipfs_gateway: Some(IPFS_GATEWAY.to_owned()),
             dependencies: vec![],
+            port: Some(SERVER_PORT),
         }
     }
 }

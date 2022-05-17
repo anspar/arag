@@ -1,1 +1,1 @@
-console.log("Hi from js");
+console.log("Hi from js")

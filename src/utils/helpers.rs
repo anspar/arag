@@ -210,7 +210,7 @@ basic_import_helper!(
     /// ```
     import_js => |param: String|{
     match super::get_file_content_text(&param){
-        Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
+        Ok(v)=>format!("<script>{}</script>", &v),
         Err(e)=>{println!("Error importing js: {}", style(e).red().bold()); "".to_owned()}
     }
 });
@@ -226,7 +226,7 @@ basic_import_helper!(
     /// ```
     import_css => |param: String|{
     match super::get_file_content_text(&param){
-        Ok(v)=>format!("<style>{}</style>", minifier::css::minify(&v).unwrap()),
+        Ok(v)=>format!("<style>{}</style>", &v),
         Err(e)=>{println!("Error importing css: {}", style(e).red().bold()); "".to_owned()}
     }
 });
@@ -247,7 +247,7 @@ basic_import_helper!(
     ///     - https://example.com/component
     /// ```
     web_component => |param: String|{
-    match super::get_file_content_text(&param){
+    match super::get_cached_content_text(&param){
         Ok(v)=>v,
         Err(e)=>{println!("Error importing web component: {}", style(e).red().bold()); "".to_owned()}
     }
@@ -270,7 +270,7 @@ basic_import_helper!(
     /// ```
     import_js_web => |param: String|{
     match super::get_cached_content_text(&param){
-        Ok(v)=>format!("<script>{}</script>", minifier::js::minify(&v)),
+        Ok(v)=>format!("<script>{}</script>", &v),
         Err(e)=>{println!("Error importing js from web: {}", style(e).red().bold()); "".to_owned()}
     }
 });
@@ -334,7 +334,7 @@ context_import_helper!(
     /// ```
     inject_gateway = |c: &Context| {
         let ipfs = c.data().get("ipfs_gateway").unwrap();
-        minifier::js::minify(&format!(
+        format!(
             "<script>
             let IPFS_GATEWAY = {};
             document.addEventListener('DOMContentLoaded', function() {{
@@ -350,7 +350,7 @@ context_import_helper!(
             }});
             </script>",
             ipfs
-        ))
+        )
     }
 );
 

@@ -2,7 +2,7 @@ use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "arag", about = "Anspar DApp builder")]
-#[structopt(version = option_env!("VERSION").unwrap_or(env!("CARGO_PKG_VERSION")))]
+#[structopt(version = option_env!("ARAG_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")))]
 pub struct Opt {
     /// Path to custom templates directory containing index.html
     #[structopt(short, long)]
