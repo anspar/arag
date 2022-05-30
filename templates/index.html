@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arag Welcome</title>
     {{import_css "static/css/index.css"}}
+    {{import_css "static/css/indexx.css"}}
 </head>
 <body>
     {{#unless release}}
         {{live_update}}
+        {{inject_gateway}}
     {{/unless}}
-    {{inject_gateway}}
     <div class="main">
         <h1>Arag</h1>
         <h2>Anspar Dapp Builder</h3>

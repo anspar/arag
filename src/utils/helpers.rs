@@ -17,7 +17,7 @@ macro_rules! basic_import_helper {
             )))?;
             match out.write(&$fn(param.value().render())) {
                 Ok(_) => Ok(()),
-                Err(e) => (Err(RenderError::new(format!("Error rendering: {}", e)))),
+                Err(e) => (Err(RenderError::new(format!("Error rendering: {:?}", e)))),
             }
         }
     };
@@ -33,7 +33,7 @@ macro_rules! basic_import_helper {
         ) -> Result<(), RenderError> {
             match out.write(&$fn()) {
                 Ok(_) => Ok(()),
-                Err(e) => (Err(RenderError::new(format!("Error rendering: {}", e)))),
+                Err(e) => (Err(RenderError::new(format!("Error rendering: {:?}", e)))),
             }
         }
     };
@@ -55,7 +55,7 @@ macro_rules! context_import_helper {
             )))?;
             match out.write(&$fn(param.value().render(), c)) {
                 Ok(_) => Ok(()),
-                Err(e) => (Err(RenderError::new(format!("Error rendering: {}", e)))),
+                Err(e) => (Err(RenderError::new(format!("Error rendering: {:?}", e)))),
             }
         }
     };
@@ -71,7 +71,7 @@ macro_rules! context_import_helper {
         ) -> Result<(), RenderError> {
             match out.write(&$fn(&c)) {
                 Ok(_) => Ok(()),
-                Err(e) => (Err(RenderError::new(format!("Error rendering: {}", e)))),
+                Err(e) => (Err(RenderError::new(format!("Error rendering: {:?}", e)))),
             }
         }
     };
@@ -89,7 +89,7 @@ basic_import_helper!(
     import_bytes => |param: String|{
     match super::get_file_content_bytes(&param){
         Ok(v)=>format!("new Uint8Array({:?})", v),
-        Err(e)=>{println!("Error importing bytes: {}", style(e).red().bold()); "[]".to_owned()}
+        Err(e)=>{println!("Error importing bytes: '{}' : {}", &param, style(e).red().bold()); "[]".to_owned()}
     }
 });
 
@@ -105,7 +105,7 @@ basic_import_helper!(
     import_wasm => |param: String|{
     match super::get_file_content_bytes(&param){
         Ok(v)=>format!("new Uint8Array({:?}).buffer", v),
-        Err(e)=>{println!("Error importing wasm: {}", style(e).red().bold()); "[]".to_owned()}
+        Err(e)=>{println!("Error importing wasm: '{}' : {}", &param, style(e).red().bold()); "[]".to_owned()}
     }
 });
 
@@ -121,7 +121,7 @@ basic_import_helper!(
     import_json => |param: String|{
     match super::get_file_content_text(&param){
         Ok(v)=>v,
-        Err(e)=>{println!("Error importing json: {}", style(e).red().bold()); "".to_owned()}
+        Err(e)=>{println!("Error importing json: '{}' : {}", &param, style(e).red().bold()); "".to_owned()}
     }
 });
 
@@ -137,7 +137,7 @@ basic_import_helper!(
     import_content => |param: String|{
     match super::get_file_content_text(&param){
         Ok(v)=>v,
-        Err(e)=>{println!("Error importing file content: {}", style(e).red().bold()); "".to_owned()}
+        Err(e)=>{println!("Error importing file content: '{}' : {}", &param, style(e).red().bold()); "".to_owned()}
     }
 });
 
@@ -156,7 +156,7 @@ basic_import_helper!(
     };
     match super::get_file_content_base64(&param){
         Ok(v)=>format!("data:audio/{};base64,{}", ext.to_lowercase(), v),
-        Err(e)=>{println!("Error importing audio: {}", style(e).red().bold()); "".to_owned()}
+        Err(e)=>{println!("Error importing audio: '{}' : {}", &param, style(e).red().bold()); "".to_owned()}
     }
 });
 
@@ -175,7 +175,7 @@ basic_import_helper!(
     };
     match super::get_file_content_base64(&param){
         Ok(v)=>format!("data:video/{};base64,{}", ext.to_lowercase(), v),
-        Err(e)=>{println!("Error importing video: {}", style(e).red().bold()); "".to_owned()}
+        Err(e)=>{println!("Error importing video: '{}' : {}", &param, style(e).red().bold()); "".to_owned()}
     }
 });
 
@@ -194,7 +194,7 @@ basic_import_helper!(
     };
     match super::get_file_content_base64(&param){
         Ok(v)=>format!("data:image/{};base64,{}", ext.to_lowercase(), v),
-        Err(e)=>{println!("Error importing img: {}", style(e).red().bold()); "".to_owned()}
+        Err(e)=>{println!("Error importing img: '{}' : {}", &param, style(e).red().bold()); "".to_owned()}
     }
 });
 
@@ -211,7 +211,7 @@ basic_import_helper!(
     import_js => |param: String|{
     match super::get_file_content_text(&param){
         Ok(v)=>format!("<script>{}</script>", &v),
-        Err(e)=>{println!("Error importing js: {}", style(e).red().bold()); "".to_owned()}
+        Err(e)=>{println!("Error importing js: '{}' : {}", &param, style(e).red().bold()); "".to_owned()}
     }
 });
 
@@ -227,7 +227,7 @@ basic_import_helper!(
     import_css => |param: String|{
     match super::get_file_content_text(&param){
         Ok(v)=>format!("<style>{}</style>", &v),
-        Err(e)=>{println!("Error importing css: {}", style(e).red().bold()); "".to_owned()}
+        Err(e)=>{println!("Error importing css: '{}' : {}", &param, style(e).red().bold()); "".to_owned()}
     }
 });
 
@@ -336,12 +336,12 @@ context_import_helper!(
         let ipfs = c.data().get("ipfs_gateway").unwrap();
         format!(
             "<script>
-            let IPFS_GATEWAY = {};
+            var IPFS_GATEWAY = {};
             document.addEventListener('DOMContentLoaded', function() {{
                 setInterval(()=>{{
                     try{{
                         if(IPFS_GATEWAY_INJECTED){{ IPFS_GATEWAY=IPFS_GATEWAY_INJECTED }}
-                    }}catch(e){{}}
+                    }}catch(e){{console.error(e)}}
                     document.querySelectorAll('[ipfs]').forEach((e, i)=>{{
                         e.setAttribute('src', `${{IPFS_GATEWAY}}${{IPFS_GATEWAY.endsWith('/')?'':'/'}}${{e.getAttribute('ipfs')}}`);
                         e.removeAttribute('ipfs');

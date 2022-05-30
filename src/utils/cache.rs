@@ -11,7 +11,10 @@ fn create_cache_dir() -> Result<bool, std::io::Error> {
     match cache_exists() {
         Ok(v) => Ok(v),
         Err(e) => {
-            println!("{e} -> Creating directory for cache");
+            println!(
+                "'{}' {e} -> Creating directory for cache",
+                crate::constants::CACHE_DIR
+            );
             let r_path = env::current_dir()?.display().to_string();
             fs::create_dir(format!("{r_path}/{}", crate::constants::CACHE_DIR))?;
             Ok(true)
@@ -47,6 +50,6 @@ pub async fn cache_from_web(url: &str) -> Result<String, Box<dyn std::error::Err
         let bytes = super::get_web_content_bytes(url).await?;
         return Ok(cache_bytes(url, bytes)?);
     }
-    println!("Skipping {} Exists", style(url).blue().bold());
+    println!("Skipping {} Cache Exists", style(url).blue().bold());
     Ok(hash)
 }
