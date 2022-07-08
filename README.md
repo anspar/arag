@@ -13,13 +13,15 @@ Report bugs and get support -> [Discord](https://discord.gg/ENQfPEcrZJ)
 Tutorials -> [Youtube](https://www.youtube.com/embed/6gErdx-llSg?list=PLynQF5IaLl6HypAzcdlxSqBdPshRNXtS6)
 
 ## Usage 
+Create new project
+
     arag new <project name>
 
-live rendering and reloading of the project
+Live rendering and reloading of the project
     
     arag show
 
-package the project into a single html file, remove development dependencies
+Package the project into a single html file and remove development dependencies
 
     arag release
 ## Dev

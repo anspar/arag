@@ -39,7 +39,22 @@ pub fn cache_bytes(name: &str, bytes: Vec<u8>) -> Result<String, std::io::Error>
     Ok(hash)
 }
 
-pub async fn cache_from_web(url: &str) -> Result<String, Box<dyn std::error::Error>> {
+// pub async fn cache_from_web(url: &str) -> Result<String, Box<dyn std::error::Error>> {
+//     let r_path = env::current_dir()?.display().to_string();
+//     let hash = get_hash(url);
+//     let store = match fs::metadata(format!("{r_path}/{}/{hash}", crate::constants::CACHE_DIR,)) {
+//         Ok(v) => !v.is_file(),
+//         Err(_) => true,
+//     };
+//     if store {
+//         let bytes = super::get_web_content_bytes(url).await?;
+//         return Ok(cache_bytes(url, bytes)?);
+//     }
+//     println!("Skipping {} Cache Exists", style(url).blue().bold());
+//     Ok(hash)
+// }
+
+pub fn cache_from_web_blocking(url: &str) -> Result<String, Box<dyn std::error::Error>> {
     let r_path = env::current_dir()?.display().to_string();
     let hash = get_hash(url);
     let store = match fs::metadata(format!("{r_path}/{}/{hash}", crate::constants::CACHE_DIR,)) {
@@ -47,7 +62,12 @@ pub async fn cache_from_web(url: &str) -> Result<String, Box<dyn std::error::Err
         Err(_) => true,
     };
     if store {
-        let bytes = super::get_web_content_bytes(url).await?;
+        let bytes = super::get_web_content_bytes_blocking(url)?;
+        if bytes.len() == 0 {
+            return Err(Box::new(crate::types::CustomError::Any(
+                "Empty Content".to_owned(),
+            )));
+        }
         return Ok(cache_bytes(url, bytes)?);
     }
     println!("Skipping {} Cache Exists", style(url).blue().bold());

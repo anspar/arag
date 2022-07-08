@@ -34,16 +34,47 @@ fn get_file_content_base64(file_path: &str) -> Result<String, std::io::Error> {
 // }
 
 pub async fn get_web_content_bytes(url: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-    // let name = url
-    //     .split("/")
-    //     .collect::<Vec<&str>>()
-    //     .last()
-    //     .unwrap_or(&"Unknown")
-    //     .to_owned();
     println!("Downloading {}", style(url).bold());
-    // let mut c = vec![];
     let c = reqwest::get(url).await?.bytes().await?.to_vec();
     Ok(c)
+}
+
+struct HtmlHandler(Vec<u8>);
+
+impl curl::easy::Handler for HtmlHandler {
+    fn write(&mut self, data: &[u8]) -> Result<usize, curl::easy::WriteError> {
+        self.0.extend_from_slice(data);
+
+        Ok(data.len())
+    }
+}
+
+pub fn get_web_content_bytes_blocking(url: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+    let mut dst = Vec::new();
+    let mut easy = curl::easy::Easy::new();
+    easy.url(url).unwrap();
+    easy.get(true)?;
+    easy.follow_location(true)?;
+    easy.progress(true)?;
+    let term = console::Term::stdout();
+    term.write_line(&format!("Downloading {}", style(url).bold()))?;
+    term.write_line(" ")?;
+    easy.progress_function(move |td, d, _, _| {
+        term.clear_last_lines(1).unwrap();
+        term.write_line(&format!("{}/{} Bytes", style(d).green(), style(td).green()))
+            .unwrap();
+        true
+    })?;
+
+    {
+        let mut transfer = easy.transfer();
+        transfer.write_function(|d| {
+            dst.extend_from_slice(d);
+            Ok(d.len())
+        })?;
+        transfer.perform()?;
+    }
+    Ok(dst)
 }
 
 fn get_cached_content_text(name: &str) -> Result<String, std::io::Error> {

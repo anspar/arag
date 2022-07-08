@@ -142,7 +142,7 @@ basic_import_helper!(
 });
 
 basic_import_helper!(
-    /// Creates base64 url of a audio file
+    /// Creates base64 url of an audio file
     ///
     /// # Example
     /// ```
@@ -247,6 +247,13 @@ basic_import_helper!(
     ///     - https://example.com/component
     /// ```
     web_component => |param: String|{
+    match super::cache::cache_from_web_blocking(&param){
+        Err(e)=>{
+            eprintln!("Failed to cache from web: {e}");
+            return "".to_owned()
+        }
+        _=>{},
+    };
     match super::get_cached_content_text(&param){
         Ok(v)=>v,
         Err(e)=>{println!("Error importing web component: {}", style(e).red().bold()); "".to_owned()}
@@ -269,6 +276,13 @@ basic_import_helper!(
     ///     - https://example.com/index.js
     /// ```
     import_js_web => |param: String|{
+    match super::cache::cache_from_web_blocking(&param){
+        Err(e)=>{
+            eprintln!("Failed to cache from web: {e}");
+            return "".to_owned()
+        }
+        _=>{},
+    };
     match super::get_cached_content_text(&param){
         Ok(v)=>format!("<script>{}</script>", &v),
         Err(e)=>{println!("Error importing js from web: {}", style(e).red().bold()); "".to_owned()}
@@ -291,6 +305,13 @@ basic_import_helper!(
     ///     - https://example.com/index.css
     /// ```
     import_css_web => |param: String|{
+    match super::cache::cache_from_web_blocking(&param){
+        Err(e)=>{
+            eprintln!("Failed to cache from web: {e}");
+            return "".to_owned()
+        }
+        _=>{},
+    };
     match super::get_cached_content_text(&param){
         Ok(v)=>format!("<style>{}</style>", v),
         Err(e)=>{println!("Error importing css from web: {}", style(e).red().bold()); "".to_owned()}
@@ -312,6 +333,13 @@ basic_import_helper!(
     ///     - https://example.com/file
     /// ```
     import_bytes_web => |param: String|{
+    match super::cache::cache_from_web_blocking(&param){
+        Err(e)=>{
+            eprintln!("Failed to cache from web: {e}");
+            return "".to_owned()
+        }
+        _=>{},
+    };
     match super::get_cached_content_bytes(&param){
         Ok(v)=>format!("new Uint8Array({:?})", v),
         Err(e)=>{println!("Error importing bytes: {}", style(e).red().bold()); "[]".to_owned()}
@@ -332,6 +360,7 @@ context_import_helper!(
     ///     {{inject_gateway}}
     /// </body>
     /// ```
+    /// Consider using https://github.com/anspar/hosq_provider for production
     inject_gateway = |c: &Context| {
         let ipfs = c.data().get("ipfs_gateway").unwrap();
         format!(
@@ -360,8 +389,11 @@ basic_import_helper!(
     ///
     /// # Example
     /// ```
-    /// ...
+    /// <body>
+    /// {{#unless release}}
     ///     {{live_update}}
+    /// {{/unless}}
+    ///     ...
     /// </body>
     /// ```
     live_update = || {

@@ -18,7 +18,6 @@ use std::io::Write;
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use utils::cache::cache_from_web;
 mod types;
 mod utils;
 use utils::{helpers, yaml_parser};
@@ -107,13 +106,13 @@ fn start_dir_watcher(state: AragState) {
     }
 }
 
-async fn cache_dependencies(dep: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
-    for d in dep {
-        let hash = cache_from_web(d).await?;
-        println!("Cached as {}", style(hash).green().bold());
-    }
-    Ok(())
-}
+// async fn cache_dependencies(dep: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+//     for d in dep {
+//         let hash = cache_from_web(d).await?;
+//         println!("Cached as {}", style(hash).green().bold());
+//     }
+//     Ok(())
+// }
 
 #[get("/")]
 pub fn index(state: &State<AragState<'_>>) -> status::Custom<content::RawHtml<String>> {
@@ -155,13 +154,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
             AragConf::default()
         }
     };
-    match cache_dependencies(&conf.dependencies).await {
-        Err(e) => {
-            eprintln!("{e}");
-            return Ok(());
-        }
-        _ => {}
-    }
+    // match cache_dependencies(&conf.dependencies).await {
+    //     Err(e) => {
+    //         eprintln!("{e}");
+    //         return Ok(());
+    //     }
+    //     _ => {}
+    // }
     let entry_dir = match opt.entry {
         Some(v) => format!("{}/{}", &r_path.display().to_string(), v),
         None => format!(
