@@ -1,4 +1,3 @@
-use console::style;
 use sha2::{Digest, Sha256};
 use std::{env, fs};
 
@@ -70,6 +69,6 @@ pub fn cache_from_web_blocking(url: &str) -> Result<String, Box<dyn std::error::
         }
         return Ok(cache_bytes(url, bytes)?);
     }
-    println!("Skipping {} Cache Exists", style(url).blue().bold());
+    // println!("Skipping {} Cache Exists", style(url).blue().bold());
     Ok(hash)
 }

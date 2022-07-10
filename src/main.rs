@@ -50,10 +50,15 @@ fn pkg(state: AragState, release: bool) -> String {
             }
             Ok(v) => v,
         };
-    let mut cfg = Cfg::new();
-    cfg.minify_css = true;
-    cfg.minify_js = true;
-    let render = minify(render.as_bytes(), &cfg);
+
+    let render = if state.minify {
+        let mut cfg = Cfg::new();
+        cfg.minify_css = true;
+        cfg.minify_js = true;
+        minify(render.as_bytes(), &cfg)
+    } else {
+        render.as_bytes().to_vec()
+    };
 
     if release {
         let path = format!("{}/build.html", &state.root_dir_path);
@@ -194,6 +199,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         entry_dir,
         hb: Arc::new(Mutex::new(hb)),
         files_updated: Arc::new(Mutex::new(true)),
+        minify: !opt.full,
     };
     match opt.cmd {
         cli::Command::New { name } => {

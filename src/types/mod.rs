@@ -33,6 +33,7 @@ pub struct AragState<'a> {
     pub entry_dir: String,
     pub hb: Arc<Mutex<Handlebars<'a>>>,
     pub files_updated: Arc<Mutex<bool>>,
+    pub minify: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]

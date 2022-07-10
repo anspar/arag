@@ -1,12 +1,16 @@
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "arag", about = "Anspar DApp builder")]
+#[structopt(name = "arag", about = "Anspar nApp builder")]
 #[structopt(version = option_env!("ARAG_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")))]
 pub struct Opt {
     /// Path to custom templates directory containing index.html
-    #[structopt(short, long)]
+    #[structopt(short, long, global = true)]
     pub entry: Option<String>,
+
+    /// Do not minify
+    #[structopt(short, long, global = true)]
+    pub full: bool,
 
     #[structopt(subcommand)]
     pub cmd: Command,
